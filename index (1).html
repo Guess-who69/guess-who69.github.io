@@ -1,0 +1,3037 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduCore — School Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+/* ============================================================
+   CSS VARIABLES & THEME
+   ============================================================ */
+:root {
+  --bg: #eef1f8;
+  --bg2: #f7f8fc;
+  --card: #ffffff;
+  --sidebar: #0f172a;
+  --sidebar-hover: #1e293b;
+  --sidebar-active: #4f46e5;
+  --primary: #4f46e5;
+  --primary-light: #6366f1;
+  --primary-dark: #3730a3;
+  --accent: #06b6d4;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --text: #0f172a;
+  --text2: #475569;
+  --text3: #94a3b8;
+  --border: #e2e8f0;
+  --border2: #cbd5e1;
+  --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  --radius: 14px;
+  --radius-sm: 8px;
+  --sidebar-w: 252px;
+  --topbar-h: 64px;
+  --font-display: 'Fraunces', serif;
+  --font-body: 'DM Sans', sans-serif;
+  --transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+  --admin-color: #f59e0b;
+  --teacher-color: #06b6d4;
+  --student-color: #22c55e;
+}
+
+[data-theme="dark"] {
+  --bg: #070c1a;
+  --bg2: #0d1427;
+  --card: #111827;
+  --sidebar: #060b18;
+  --sidebar-hover: #0d1427;
+  --text: #f1f5f9;
+  --text2: #94a3b8;
+  --text3: #64748b;
+  --border: #1e293b;
+  --border2: #334155;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.2);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.3s, color 0.3s;
+}
+a { color: inherit; text-decoration: none; }
+ul { list-style: none; }
+input, textarea, select, button { font-family: var(--font-body); }
+img { max-width: 100%; display: block; }
+h1,h2,h3,h4,h5 { font-family: var(--font-display); font-weight: 700; }
+button { cursor: pointer; border: none; outline: none; }
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+/* ============================================================
+   LOGIN SCREEN
+   ============================================================ */
+#login-screen {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+  z-index: 1000;
+  overflow: hidden;
+}
+.login-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #0f172a 100%);
+  overflow: hidden;
+}
+.login-bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.15;
+  animation: orbFloat 8s ease-in-out infinite alternate;
+}
+.login-bg-orb:nth-child(1) { width:500px;height:500px;background:#4f46e5;top:-100px;right:-100px;animation-delay:0s; }
+.login-bg-orb:nth-child(2) { width:350px;height:350px;background:#06b6d4;bottom:-80px;left:-60px;animation-delay:3s; }
+.login-bg-orb:nth-child(3) { width:250px;height:250px;background:#a855f7;top:40%;left:40%;animation-delay:1.5s; }
+@keyframes orbFloat { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(30px,20px) scale(1.08)} }
+
+.login-grid {
+  position: absolute; inset: 0;
+  background-image: 
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+.login-card {
+  position: relative; z-index: 1;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(32px);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 24px;
+  padding: 48px 44px;
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  box-shadow: 0 32px 80px rgba(0,0,0,0.4);
+}
+.login-logo {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 36px;
+}
+.login-logo-icon {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, #4f46e5, #06b6d4);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; color: white;
+}
+.login-logo-text { color: white; }
+.login-logo-text h1 { font-size: 22px; line-height: 1; }
+.login-logo-text span { font-size: 11px; color: rgba(255,255,255,0.5); font-family: var(--font-body); font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase; }
+.login-title { color: white; font-size: 26px; margin-bottom: 6px; }
+.login-sub { color: rgba(255,255,255,0.45); font-size: 13px; margin-bottom: 32px; font-weight: 400; }
+
+.form-group { margin-bottom: 18px; }
+.form-label { display: block; color: rgba(255,255,255,0.65); font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px; }
+.form-input {
+  width: 100%;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: white;
+  font-size: 14px;
+  transition: var(--transition);
+}
+.form-input::placeholder { color: rgba(255,255,255,0.3); }
+.form-input:focus { outline: none; border-color: #4f46e5; background: rgba(79,70,229,0.1); box-shadow: 0 0 0 3px rgba(79,70,229,0.2); }
+.form-input-wrap { position: relative; }
+.form-input-wrap .form-input { padding-right: 44px; }
+.form-input-toggle {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  color: rgba(255,255,255,0.4); cursor: pointer; font-size: 15px;
+  transition: color 0.2s;
+}
+.form-input-toggle:hover { color: rgba(255,255,255,0.7); }
+
+.login-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: white;
+  border-radius: 10px;
+  padding: 13px;
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 8px;
+  box-shadow: 0 4px 20px rgba(79,70,229,0.4);
+  transition: var(--transition);
+  position: relative; overflow: hidden;
+}
+.login-btn::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: white;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.login-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(79,70,229,0.5); }
+.login-btn:hover::after { opacity: 0.06; }
+.login-btn:active { transform: translateY(0); }
+.login-btn i { margin-right: 8px; }
+
+.login-error {
+  color: #fca5a5;
+  font-size: 12.5px;
+  margin-top: 12px;
+  text-align: center;
+  display: none;
+}
+
+.login-footer {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.3);
+  font-size: 11.5px;
+  text-align: center;
+}
+
+/* ============================================================
+   DASHBOARD SCREEN
+   ============================================================ */
+#dashboard-screen {
+  display: none;
+  min-height: 100vh;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  position: fixed; top: 0; left: 0;
+  width: var(--sidebar-w);
+  height: 100vh;
+  background: var(--sidebar);
+  display: flex; flex-direction: column;
+  z-index: 200;
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
+}
+.sidebar-logo {
+  padding: 22px 20px 18px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.sidebar-logo-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: white; flex-shrink: 0;
+}
+.sidebar-logo-text h2 { color: white; font-size: 17px; }
+.sidebar-logo-text span { color: rgba(255,255,255,0.35); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-family: var(--font-body); }
+
+.sidebar-user {
+  padding: 16px 20px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.sidebar-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: white; font-weight: 600; flex-shrink: 0;
+}
+.sidebar-user-info .name { color: white; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+.sidebar-user-info .role-badge {
+  display: inline-block;
+  font-size: 10px; font-weight: 600;
+  padding: 2px 7px; border-radius: 99px;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.role-badge.admin { background: rgba(245,158,11,0.2); color: #fbbf24; }
+.role-badge.teacher { background: rgba(6,182,212,0.2); color: #22d3ee; }
+.role-badge.student { background: rgba(34,197,94,0.2); color: #4ade80; }
+
+.sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 10px; }
+.nav-section-label { color: rgba(255,255,255,0.25); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; padding: 12px 10px 6px; font-weight: 600; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  color: rgba(255,255,255,0.55);
+  font-size: 13.5px; font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-bottom: 2px;
+  position: relative;
+}
+.nav-item i { width: 18px; text-align: center; font-size: 14px; }
+.nav-item:hover { background: var(--sidebar-hover); color: rgba(255,255,255,0.85); }
+.nav-item.active { background: var(--sidebar-active); color: white; }
+.nav-item .nav-badge {
+  margin-left: auto;
+  background: var(--danger);
+  color: white;
+  font-size: 10px; font-weight: 700;
+  padding: 2px 6px; border-radius: 99px;
+  min-width: 18px; text-align: center;
+  animation: badgePulse 2s ease infinite;
+}
+@keyframes badgePulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+
+.sidebar-footer {
+  padding: 12px 10px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.sidebar-footer .nav-item { margin-bottom: 0; }
+
+/* ── MAIN CONTENT ── */
+.main-wrap {
+  margin-left: var(--sidebar-w);
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  transition: margin 0.3s;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  height: var(--topbar-h);
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 1px 0 var(--border);
+}
+.topbar-hamburger {
+  display: none;
+  width: 38px; height: 38px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  align-items: center; justify-content: center;
+  font-size: 15px; color: var(--text2);
+  cursor: pointer; transition: var(--transition);
+  flex-shrink: 0;
+}
+.topbar-hamburger:hover { background: var(--border); color: var(--text); }
+.topbar-title {
+  flex: 1;
+  display: flex; flex-direction: column;
+}
+.topbar-title h2 { font-size: 18px; color: var(--text); line-height: 1.1; }
+.topbar-title span { font-size: 11.5px; color: var(--text3); font-family: var(--font-body); font-weight: 400; }
+
+.topbar-actions { display: flex; align-items: center; gap: 10px; }
+
+.topbar-search {
+  display: flex; align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 12px;
+  gap: 8px;
+  width: 220px;
+  transition: var(--transition);
+}
+.topbar-search:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+.topbar-search i { color: var(--text3); font-size: 13px; }
+.topbar-search input {
+  background: none; border: none; outline: none;
+  font-size: 13px; color: var(--text);
+  width: 100%;
+}
+.topbar-search input::placeholder { color: var(--text3); }
+
+.icon-btn {
+  width: 38px; height: 38px;
+  border-radius: 9px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; color: var(--text2);
+  cursor: pointer; transition: var(--transition);
+  position: relative;
+}
+.icon-btn:hover { background: var(--primary); border-color: var(--primary); color: white; }
+.icon-btn .badge {
+  position: absolute; top: -4px; right: -4px;
+  background: var(--danger);
+  color: white; font-size: 9px; font-weight: 700;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--card);
+  animation: badgePulse 2s ease infinite;
+}
+
+.topbar-user {
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer; padding: 4px 8px; border-radius: 9px;
+  transition: var(--transition);
+}
+.topbar-user:hover { background: var(--bg); }
+.topbar-user .avatar {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 12px; font-weight: 700;
+}
+.topbar-user .uname { font-size: 13px; font-weight: 600; color: var(--text); }
+.topbar-user .urole { font-size: 11px; color: var(--text3); text-transform: capitalize; }
+
+/* ── CONTENT AREA ── */
+.content-area {
+  flex: 1;
+  padding: 28px;
+  overflow-x: hidden;
+}
+
+/* ── SECTION PANEL ── */
+.section-panel { display: none; animation: fadeUp 0.35s cubic-bezier(0.4,0,0.2,1) forwards; }
+.section-panel.active { display: block; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+/* ============================================================
+   COMMON COMPONENTS
+   ============================================================ */
+
+/* Page Header */
+.page-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+}
+.page-header-left h1 { font-size: 24px; color: var(--text); margin-bottom: 4px; }
+.page-header-left p { font-size: 13px; color: var(--text2); font-weight: 400; }
+.page-header-right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+/* Stats Grid */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  display: flex; align-items: center; gap: 16px;
+  transition: var(--transition);
+  cursor: default;
+  position: relative; overflow: hidden;
+}
+.stat-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--stat-color, var(--primary));
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.stat-icon {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  background: var(--stat-bg, rgba(79,70,229,0.1));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  color: var(--stat-color, var(--primary));
+  flex-shrink: 0;
+}
+.stat-info .val { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1; margin-bottom: 4px; font-family: var(--font-display); }
+.stat-info .lbl { font-size: 12px; color: var(--text2); font-weight: 500; }
+.stat-info .sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+/* Cards */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.card-header {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card-header h3 { font-size: 15px; color: var(--text); }
+.card-body { padding: 20px; }
+.card-footer { padding: 14px 20px; border-top: 1px solid var(--border); }
+
+/* Grid Layouts */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+
+/* Tables */
+.table-wrap { overflow-x: auto; }
+table {
+  width: 100%; border-collapse: collapse;
+  font-size: 13.5px;
+}
+thead th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg);
+  color: var(--text2);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--bg); }
+tbody td { padding: 11px 14px; color: var(--text); vertical-align: middle; }
+
+/* Badges / Pills */
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 9px; border-radius: 99px;
+  font-size: 11.5px; font-weight: 600;
+}
+.badge-primary { background: rgba(79,70,229,0.12); color: #4f46e5; }
+.badge-success { background: rgba(34,197,94,0.12); color: #16a34a; }
+.badge-warning { background: rgba(245,158,11,0.12); color: #d97706; }
+.badge-danger  { background: rgba(239,68,68,0.12); color: #dc2626; }
+.badge-info    { background: rgba(6,182,212,0.12); color: #0891b2; }
+.badge-gray    { background: var(--bg); color: var(--text2); border: 1px solid var(--border); }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 16px;
+  border-radius: 9px;
+  font-size: 13px; font-weight: 600;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.btn i { font-size: 12px; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(79,70,229,0.3); }
+.btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--border); }
+.btn-success { background: var(--success); color: white; }
+.btn-success:hover { background: #16a34a; }
+.btn-danger { background: var(--danger); color: white; }
+.btn-danger:hover { background: #dc2626; }
+.btn-warning { background: var(--warning); color: white; }
+.btn-sm { padding: 6px 11px; font-size: 12px; border-radius: 7px; }
+.btn-icon { padding: 8px; border-radius: 8px; }
+.btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+.btn-outline:hover { background: var(--primary); color: white; }
+
+/* Search / Filter Bar */
+.filter-bar {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 18px; flex-wrap: wrap;
+}
+.filter-bar .search-box {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 9px 14px;
+  flex: 1; min-width: 200px;
+  transition: var(--transition);
+}
+.filter-bar .search-box:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+.filter-bar .search-box i { color: var(--text3); font-size: 13px; }
+.filter-bar .search-box input { background: none; border: none; outline: none; font-size: 13px; color: var(--text); width: 100%; }
+.filter-bar .search-box input::placeholder { color: var(--text3); }
+
+select.filter-select {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 9px 32px 9px 12px;
+  font-size: 13px; color: var(--text);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 16px;
+  transition: var(--transition);
+}
+select.filter-select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 500;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  width: 100%; max-width: 600px;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  transform: scale(0.95) translateY(8px);
+  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+.modal-overlay.open .modal { transform: scale(1) translateY(0); }
+.modal-lg { max-width: 800px; }
+.modal-xl { max-width: 1000px; }
+.modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: var(--card); z-index: 1;
+}
+.modal-header h3 { font-size: 17px; color: var(--text); }
+.modal-close {
+  width: 30px; height: 30px;
+  border-radius: 7px; background: var(--bg);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: var(--text2);
+  cursor: pointer; transition: var(--transition);
+}
+.modal-close:hover { background: var(--danger); color: white; border-color: var(--danger); }
+.modal-body { padding: 24px; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+
+/* Form Styles */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.form-row.single { grid-template-columns: 1fr; }
+.form-row.triple { grid-template-columns: 1fr 1fr 1fr; }
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+.field input, .field select, .field textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 10px 14px;
+  font-size: 13.5px; color: var(--text);
+  transition: var(--transition);
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none; border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+  background: var(--card);
+}
+.field textarea { resize: vertical; min-height: 80px; }
+.field select { appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 10px center; background-size: 16px; padding-right: 36px; }
+
+/* Notification Toast */
+.toast-container {
+  position: fixed; bottom: 24px; right: 24px;
+  z-index: 9999; display: flex; flex-direction: column; gap: 10px;
+  align-items: flex-end;
+}
+.toast {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex; align-items: center; gap: 12px;
+  box-shadow: var(--shadow-lg);
+  min-width: 280px; max-width: 360px;
+  animation: toastIn 0.35s cubic-bezier(0.4,0,0.2,1) forwards;
+  position: relative; overflow: hidden;
+}
+.toast::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--toast-color, var(--primary));
+}
+@keyframes toastIn { from{opacity:0;transform:translateX(24px)} to{opacity:1;transform:translateX(0)} }
+@keyframes toastOut { to{opacity:0;transform:translateX(24px)} }
+.toast-icon { font-size: 18px; color: var(--toast-color, var(--primary)); flex-shrink: 0; }
+.toast-content .title { font-size: 13px; font-weight: 600; color: var(--text); }
+.toast-content .msg { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+/* Charts */
+.chart-container { position: relative; height: 220px; }
+.chart-container-lg { height: 300px; }
+
+/* Assignment Cards */
+.assignment-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+  cursor: pointer;
+  position: relative; overflow: hidden;
+}
+.assignment-card::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--ac, var(--primary));
+  transition: width 0.2s;
+}
+.assignment-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.assignment-card:hover::before { width: 6px; }
+.assignment-card-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; font-family: var(--font-display); }
+.assignment-card-meta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 8px; }
+.assignment-card-meta span { font-size: 12px; color: var(--text3); display: flex; align-items: center; gap: 4px; }
+.assignment-card-meta span i { font-size: 11px; }
+.assignment-card-desc { font-size: 13px; color: var(--text2); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Progress Bar */
+.progress-bar { background: var(--border); border-radius: 99px; height: 6px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 99px; background: var(--primary); transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+
+/* MCQ Options */
+.mcq-option {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-bottom: 10px;
+}
+.mcq-option:hover { border-color: var(--primary); background: rgba(79,70,229,0.04); }
+.mcq-option.selected { border-color: var(--primary); background: rgba(79,70,229,0.08); }
+.mcq-option.correct { border-color: var(--success); background: rgba(34,197,94,0.08); }
+.mcq-option.wrong { border-color: var(--danger); background: rgba(239,68,68,0.08); }
+.mcq-letter {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; flex-shrink: 0;
+  transition: var(--transition);
+}
+.mcq-option.selected .mcq-letter { background: var(--primary); border-color: var(--primary); color: white; }
+.mcq-option.correct .mcq-letter { background: var(--success); border-color: var(--success); color: white; }
+.mcq-option.wrong .mcq-letter { background: var(--danger); border-color: var(--danger); color: white; }
+.mcq-text { font-size: 13.5px; color: var(--text); flex: 1; }
+
+/* Avatar Colors */
+.av-purple { background: linear-gradient(135deg,#7c3aed,#a855f7); }
+.av-blue   { background: linear-gradient(135deg,#2563eb,#60a5fa); }
+.av-green  { background: linear-gradient(135deg,#059669,#34d399); }
+.av-orange { background: linear-gradient(135deg,#d97706,#fbbf24); }
+.av-pink   { background: linear-gradient(135deg,#db2777,#f472b6); }
+.av-indigo { background: linear-gradient(135deg,#4f46e5,#818cf8); }
+
+/* Empty State */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 60px 20px; text-align: center; color: var(--text3);
+}
+.empty-state i { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
+.empty-state h3 { font-size: 16px; color: var(--text2); margin-bottom: 8px; }
+.empty-state p { font-size: 13px; max-width: 280px; }
+
+/* Section Cards (1201-1216) */
+.section-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 14px; }
+.section-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: var(--shadow);
+  position: relative; overflow: hidden;
+}
+.section-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--primary); }
+.section-card .num { font-family: var(--font-display); font-size: 24px; font-weight: 700; color: var(--primary); }
+.section-card .lbl { font-size: 11px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+.section-card .count { font-size: 12px; color: var(--text2); margin-top: 8px; }
+
+/* Announcement Card */
+.announcement-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 12px;
+  transition: var(--transition);
+}
+.announcement-card:hover { box-shadow: var(--shadow-lg); }
+.announcement-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+.announcement-card-title { font-size: 14.5px; font-weight: 700; color: var(--text); }
+.announcement-card-meta { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+.announcement-card-meta span { font-size: 11.5px; color: var(--text3); display: flex; align-items: center; gap: 4px; }
+.announcement-card-body { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+/* Notification Item */
+.notif-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+  cursor: pointer;
+}
+.notif-item:last-child { border-bottom: none; }
+.notif-item:hover { background: var(--bg); }
+.notif-item.unread { background: rgba(79,70,229,0.04); }
+.notif-icon {
+  width: 36px; height: 36px;
+  border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+.notif-content .title { font-size: 13px; font-weight: 600; color: var(--text); }
+.notif-content .msg { font-size: 12px; color: var(--text2); margin-top: 2px; line-height: 1.4; }
+.notif-content .time { font-size: 11px; color: var(--text3); margin-top: 4px; }
+.notif-dot {
+  width: 8px; height: 8px;
+  background: var(--primary); border-radius: 50%;
+  margin-top: 4px; flex-shrink: 0;
+}
+
+/* Dark Mode Toggle */
+.theme-toggle {
+  width: 44px; height: 24px;
+  background: var(--text3);
+  border-radius: 99px;
+  position: relative; cursor: pointer;
+  transition: background 0.3s;
+  flex-shrink: 0;
+}
+.theme-toggle.on { background: var(--primary); }
+.theme-toggle::after {
+  content: '';
+  position: absolute; top: 3px; left: 3px;
+  width: 18px; height: 18px;
+  background: white; border-radius: 50%;
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+.theme-toggle.on::after { transform: translateX(20px); }
+
+/* Question Builder */
+.question-block {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 14px;
+  position: relative;
+}
+.question-block-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.question-block-header span { font-size: 12px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; }
+.option-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.option-letter {
+  width: 28px; height: 28px; flex-shrink: 0;
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--text2);
+}
+.option-row input { flex: 1; }
+.correct-radio {
+  width: 18px; height: 18px; flex-shrink: 0;
+  accent-color: var(--success); cursor: pointer;
+}
+.correct-label { font-size: 11px; color: var(--text3); }
+
+/* Profile Card */
+.profile-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.profile-banner {
+  height: 100px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  position: relative;
+}
+.profile-avatar-wrap {
+  position: absolute; bottom: -28px; left: 24px;
+  width: 64px; height: 64px;
+  background: var(--card);
+  border-radius: 50%;
+  padding: 4px;
+}
+.profile-avatar {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; color: white;
+}
+.profile-info { padding: 44px 24px 24px; }
+.profile-info h2 { font-size: 20px; color: var(--text); margin-bottom: 4px; }
+.profile-info-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 14px; margin-top: 18px;
+}
+.profile-field { }
+.profile-field label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 3px; }
+.profile-field span { font-size: 14px; color: var(--text); font-weight: 500; }
+
+/* Sidebar overlay (mobile) */
+.sidebar-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 199;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1024px) {
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-overlay { display: block; }
+  .main-wrap { margin-left: 0; }
+  .topbar-hamburger { display: flex; }
+  .topbar-search { display: none; }
+  .content-area { padding: 16px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  .form-row.triple { grid-template-columns: 1fr; }
+  .page-header { flex-direction: column; }
+  .profile-info-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr; }
+  .login-card { padding: 32px 24px; }
+  .modal-body { padding: 16px; }
+}
+
+/* Loading Spinner */
+.spinner {
+  width: 22px; height: 22px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Score Result */
+.score-display {
+  text-align: center; padding: 40px 20px;
+}
+.score-circle {
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  background: conic-gradient(var(--primary) calc(var(--pct)*1%), var(--border) 0%);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+  box-shadow: var(--shadow);
+}
+.score-inner {
+  width: 92px; height: 92px;
+  border-radius: 50%;
+  background: var(--card);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column;
+}
+.score-inner .pct { font-family: var(--font-display); font-size: 26px; font-weight: 700; color: var(--text); }
+.score-inner .lbl { font-size: 10px; color: var(--text3); }
+</style>
+</head>
+<body>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Sidebar Overlay (mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- ============================================================
+     LOGIN SCREEN
+     ============================================================ -->
+<div id="login-screen">
+  <div class="login-bg">
+    <div class="login-bg-orb"></div>
+    <div class="login-bg-orb"></div>
+    <div class="login-bg-orb"></div>
+    <div class="login-grid"></div>
+  </div>
+  <div class="login-card" id="loginCard">
+    <div class="login-logo">
+      <div class="login-logo-icon"><i class="fas fa-graduation-cap"></i></div>
+      <div class="login-logo-text">
+        <h1>EduCore</h1>
+        <span>School Management System</span>
+      </div>
+    </div>
+    <h2 class="login-title">Welcome back</h2>
+    <p class="login-sub">Sign in to your account to continue</p>
+    <div class="form-group">
+      <label class="form-label">Username</label>
+      <input class="form-input" type="text" id="loginUsername" placeholder="Enter your username" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <div class="form-input-wrap">
+        <input class="form-input" type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password">
+        <i class="fas fa-eye form-input-toggle" id="pwToggle" onclick="togglePw()"></i>
+      </div>
+    </div>
+    <p class="login-error" id="loginError"><i class="fas fa-exclamation-circle"></i> Invalid username or password</p>
+    <button class="login-btn" onclick="handleLogin()"><i class="fas fa-sign-in-alt"></i> Sign In</button>
+    <div class="login-footer">EduCore v1.0 &mdash; School Management System</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     DASHBOARD SCREEN
+     ============================================================ -->
+<div id="dashboard-screen">
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon"><i class="fas fa-graduation-cap"></i></div>
+      <div class="sidebar-logo-text">
+        <h2>EduCore</h2>
+        <span>Management System</span>
+      </div>
+    </div>
+    <div class="sidebar-user">
+      <div class="sidebar-avatar" id="sidebarAvatar"></div>
+      <div class="sidebar-user-info">
+        <div class="name" id="sidebarName"></div>
+        <span class="role-badge" id="sidebarRole"></span>
+      </div>
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav"></nav>
+    <div class="sidebar-footer">
+      <div class="nav-item" onclick="showSection('profile')">
+        <i class="fas fa-user-circle"></i> My Profile
+      </div>
+      <div class="nav-item" style="display:flex;justify-content:space-between;align-items:center;cursor:default;">
+        <span style="display:flex;align-items:center;gap:10px;font-size:13.5px;color:rgba(255,255,255,0.55);">
+          <i class="fas fa-moon" style="width:18px;text-align:center;"></i> Dark Mode
+        </span>
+        <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()"></div>
+      </div>
+      <div class="nav-item" onclick="handleLogout()">
+        <i class="fas fa-sign-out-alt"></i> Sign Out
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Wrapper -->
+  <div class="main-wrap" id="mainWrap">
+    <!-- Topbar -->
+    <header class="topbar">
+      <button class="topbar-hamburger" id="hamburger" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+      </button>
+      <div class="topbar-title">
+        <h2 id="topbarTitle">Dashboard</h2>
+        <span id="topbarSub"></span>
+      </div>
+      <div class="topbar-actions">
+        <div class="topbar-search" id="topbarSearch">
+          <i class="fas fa-search"></i>
+          <input type="text" placeholder="Search..." id="globalSearch" oninput="handleGlobalSearch(this.value)">
+        </div>
+        <button class="icon-btn" onclick="showSection('notifications')" id="notifBtn" title="Notifications">
+          <i class="fas fa-bell"></i>
+          <span class="badge" id="notifBadge" style="display:none">0</span>
+        </button>
+        <div class="topbar-user" onclick="showSection('profile')">
+          <div class="avatar" id="topbarAvatar"></div>
+          <div>
+            <div class="uname" id="topbarName"></div>
+            <div class="urole" id="topbarRole"></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <main class="content-area" id="contentArea">
+      <!-- Panels are rendered dynamically -->
+    </main>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CONSTANTS
+   ============================================================ */
+const SECTIONS = Array.from({length:16}, (_,i) => String(1201+i));
+const ROLES = ['admin','teacher','student'];
+const AV_COLORS = ['av-indigo','av-blue','av-green','av-orange','av-pink','av-purple'];
+
+/* ============================================================
+   DATA MANAGER  — localStorage persistence
+   ============================================================ */
+const DB = {
+  _get(k){ try{return JSON.parse(localStorage.getItem(k))||null}catch{return null} },
+  _set(k,v){ localStorage.setItem(k, JSON.stringify(v)) },
+
+  getUsers(){ return this._get('ec_users') || [] },
+  saveUsers(u){ this._set('ec_users',u) },
+  getUserById(id){ return this.getUsers().find(u=>u.id===id)||null },
+  getUserByUsername(uname){ return this.getUsers().find(u=>u.username.toLowerCase()===uname.toLowerCase())||null },
+
+  getAssignments(){ return this._get('ec_assignments') || [] },
+  saveAssignments(a){ this._set('ec_assignments',a) },
+  getAssignmentById(id){ return this.getAssignments().find(a=>a.id===id)||null },
+
+  getSubmissions(){ return this._get('ec_submissions') || [] },
+  saveSubmissions(s){ this._set('ec_submissions',s) },
+  getSubmissionByStudentAndAssignment(sid,aid){ return this.getSubmissions().find(s=>s.studentId===sid&&s.assignmentId===aid)||null },
+
+  getAnnouncements(){ return this._get('ec_announcements') || [] },
+  saveAnnouncements(a){ this._set('ec_announcements',a) },
+
+  getNotifications(){ return this._get('ec_notifications') || [] },
+  saveNotifications(n){ this._set('ec_notifications',n) },
+  getNotifForUser(uid){ return this.getNotifications().filter(n=>n.userId===uid) },
+
+  getCurrentUser(){ return this._get('ec_current_user') },
+  setCurrentUser(u){ this._set('ec_current_user',u) },
+  clearCurrentUser(){ localStorage.removeItem('ec_current_user') },
+
+  uid(){ return 'id_'+Date.now()+'_'+Math.random().toString(36).substr(2,6) },
+
+  // Add notification for a user
+  addNotification(userId, title, message, type='info', relatedId=null){
+    const notifs = this.getNotifications();
+    notifs.unshift({ id:this.uid(), userId, title, message, type, relatedId, read:false, createdAt: new Date().toISOString() });
+    this.saveNotifications(notifs);
+    if(App.currentUser && App.currentUser.id === userId) UI.updateNotifBadge();
+  },
+
+  // Notify all students in a section
+  notifySection(section, title, message, type='info', relatedId=null){
+    const students = this.getUsers().filter(u=>u.role==='student'&&u.section===section);
+    students.forEach(s=>this.addNotification(s.id, title, message, type, relatedId));
+  }
+};
+
+/* ============================================================
+   SEED DATA — default admin + sample users
+   ============================================================ */
+function seedData(){
+  if(DB.getUsers().length > 0) return; // already seeded
+  const users = [
+    {
+      id:'admin_001', username:'Admin', password:'Admin0910',
+      role:'admin', name:'System Administrator', email:'admin@educore.edu',
+      phone:'+1 555-0100', section:null, sections:[],
+      avatar:null, createdAt: new Date().toISOString(), isActive:true
+    },
+    {
+      id:'teacher_001', username:'teacher1', password:'teacher123',
+      role:'teacher', name:'Ms. Sarah Chen', email:'sarah.chen@educore.edu',
+      phone:'+1 555-0201', section:'1201', sections:['1201','1202'],
+      avatar:null, createdAt: new Date().toISOString(), isActive:true
+    },
+    {
+      id:'teacher_002', username:'teacher2', password:'teacher123',
+      role:'teacher', name:'Mr. James Rivera', email:'james.rivera@educore.edu',
+      phone:'+1 555-0202', section:'1203', sections:['1203','1204'],
+      avatar:null, createdAt: new Date().toISOString(), isActive:true
+    },
+    {
+      id:'student_001', username:'student1', password:'student123',
+      role:'student', name:'Alex Johnson', email:'alex.j@educore.edu',
+      phone:'+1 555-1001', section:'1201', sections:['1201'],
+      avatar:null, createdAt: new Date().toISOString(), isActive:true
+    },
+    {
+      id:'student_002', username:'student2', password:'student123',
+      role:'student', name:'Maria Santos', email:'maria.s@educore.edu',
+      phone:'+1 555-1002', section:'1201', sections:['1201'],
+      avatar:null, createdAt: new Date().toISOString(), isActive:true
+    },
+    {
+      id:'student_003', username:'student3', password:'student123',
+      role:'student', name:'David Park', email:'david.p@educore.edu',
+      phone:'+1 555-1003', section:'1202', sections:['1202'],
+      avatar:null, createdAt: new Date().toISOString(), isActive:true
+    }
+  ];
+  DB.saveUsers(users);
+
+  // Sample assignment
+  const deadline = new Date(); deadline.setDate(deadline.getDate()+7);
+  const assignments = [{
+    id:'assign_001', title:'Introduction to Algebra', description:'Test your understanding of basic algebraic concepts.',
+    deadline: deadline.toISOString(), section:'1201', teacherId:'teacher_001',
+    questions:[
+      { id:'q1', text:'What is the value of x if 2x + 4 = 10?', options:['x = 2','x = 3','x = 4','x = 5'], correctAnswer:1 },
+      { id:'q2', text:'Which of the following is a polynomial?', options:['2x + 3','1/x','√x','x^(-2)'], correctAnswer:0 },
+      { id:'q3', text:'What does FOIL stand for?', options:['First, Outer, Inner, Last','First, Over, Inside, Last','Front, Outer, Inner, Last','First, Outer, Inner, Least'], correctAnswer:0 },
+      { id:'q4', text:'Simplify: 3(2x + 4)', options:['5x + 4','6x + 12','6x + 4','5x + 12'], correctAnswer:1 }
+    ],
+    createdAt: new Date().toISOString(), isActive:true
+  }];
+  DB.saveAssignments(assignments);
+
+  // Seed announcement
+  const announcements = [{
+    id:'ann_001', title:'Welcome to EduCore!', 
+    content:'Welcome to the new semester! Please make sure to check your assignments regularly and reach out to your teachers if you have any questions.',
+    authorId:'admin_001', authorName:'System Administrator', authorRole:'admin',
+    targetSection:null, createdAt: new Date().toISOString(), type:'announcement'
+  }];
+  DB.saveAnnouncements(announcements);
+
+  // Seed notification for student_001
+  DB.addNotification('student_001','New Assignment Posted','Introduction to Algebra has been assigned to your section.','assignment','assign_001');
+}
+
+/* ============================================================
+   UTILITY FUNCTIONS
+   ============================================================ */
+function getInitials(name){
+  if(!name) return '?';
+  return name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+}
+function getAvatarColor(id){
+  const hash = (id||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  return AV_COLORS[hash % AV_COLORS.length];
+}
+function formatDate(iso){
+  if(!iso) return 'N/A';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function formatDateTime(iso){
+  if(!iso) return 'N/A';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' ' +
+         d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+}
+function timeAgo(iso){
+  const diff = Date.now() - new Date(iso).getTime();
+  if(diff<60000) return 'just now';
+  if(diff<3600000) return Math.floor(diff/60000)+'m ago';
+  if(diff<86400000) return Math.floor(diff/3600000)+'h ago';
+  return Math.floor(diff/86400000)+'d ago';
+}
+function isDeadlineSoon(iso){
+  if(!iso) return false;
+  const diff = new Date(iso).getTime() - Date.now();
+  return diff > 0 && diff < 3*24*60*60*1000; // within 3 days
+}
+function isOverdue(iso){
+  if(!iso) return false;
+  return new Date(iso).getTime() < Date.now();
+}
+function getGradeColor(pct){
+  if(pct>=90) return 'var(--success)';
+  if(pct>=75) return 'var(--primary)';
+  if(pct>=60) return 'var(--warning)';
+  return 'var(--danger)';
+}
+function getGradeLabel(pct){
+  if(pct>=90) return 'A';
+  if(pct>=80) return 'B';
+  if(pct>=70) return 'C';
+  if(pct>=60) return 'D';
+  return 'F';
+}
+function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ============================================================
+   UI HELPERS
+   ============================================================ */
+const UI = {
+  showToast(title, msg, type='success'){
+    const colors = { success:'var(--success)', danger:'var(--danger)', warning:'var(--warning)', info:'var(--primary)' };
+    const icons = { success:'fa-check-circle', danger:'fa-times-circle', warning:'fa-exclamation-triangle', info:'fa-info-circle' };
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.style.setProperty('--toast-color', colors[type]||colors.info);
+    el.innerHTML = `<i class="fas ${icons[type]||icons.info} toast-icon"></i>
+      <div class="toast-content"><div class="title">${escHtml(title)}</div><div class="msg">${escHtml(msg)}</div></div>`;
+    const container = document.getElementById('toastContainer');
+    container.appendChild(el);
+    setTimeout(()=>{ el.style.animation='toastOut 0.3s forwards'; setTimeout(()=>el.remove(),300); }, 3500);
+  },
+
+  updateNotifBadge(){
+    if(!App.currentUser) return;
+    const unread = DB.getNotifForUser(App.currentUser.id).filter(n=>!n.read).length;
+    const badge = document.getElementById('notifBadge');
+    const navBadge = document.querySelector('.nav-badge[data-for="notifications"]');
+    if(badge){ badge.textContent=unread; badge.style.display=unread?'flex':'none'; }
+    if(navBadge){ navBadge.textContent=unread; navBadge.style.display=unread?'flex':'none'; }
+  },
+
+  openModal(id){ const m=document.getElementById(id); if(m){ m.classList.add('open'); } },
+  closeModal(id){ const m=document.getElementById(id); if(m){ m.classList.remove('open'); } },
+
+  renderAvatar(name, id, size=32, extraClass=''){
+    const initials = getInitials(name);
+    const color = getAvatarColor(id);
+    return `<div style="width:${size}px;height:${size}px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:${Math.round(size*0.38)}px;font-weight:700;flex-shrink:0" class="${color} ${extraClass}">${initials}</div>`;
+  }
+};
+
+/* ============================================================
+   AUTH MANAGER
+   ============================================================ */
+const Auth = {
+  login(username, password){
+    const user = DB.getUserByUsername(username);
+    if(!user || user.password !== password || !user.isActive) return null;
+    DB.setCurrentUser(user);
+    return user;
+  },
+  logout(){
+    DB.clearCurrentUser();
+    App.currentUser = null;
+  },
+  isLoggedIn(){ return !!DB.getCurrentUser(); }
+};
+
+/* ============================================================
+   APP CONTROLLER
+   ============================================================ */
+const App = {
+  currentUser: null,
+  currentSection: '',
+  charts: {},
+
+  init(){
+    seedData();
+    // Check dark mode pref
+    if(localStorage.getItem('ec_dark')==='1'){
+      document.documentElement.setAttribute('data-theme','dark');
+      const toggle = document.getElementById('themeToggle');
+      if(toggle) toggle.classList.add('on');
+    }
+    // Check if logged in
+    const saved = DB.getCurrentUser();
+    if(saved){
+      const fresh = DB.getUserById(saved.id);
+      if(fresh && fresh.isActive){
+        this.currentUser = fresh;
+        this.showDashboard(fresh);
+        return;
+      }
+    }
+    this.showLogin();
+  },
+
+  showLogin(){
+    document.getElementById('login-screen').style.display='flex';
+    document.getElementById('dashboard-screen').style.display='none';
+    gsap.fromTo('#loginCard', {opacity:0,y:30}, {opacity:1,y:0,duration:0.6,ease:'power3.out'});
+  },
+
+  showDashboard(user){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('dashboard-screen').style.display='block';
+    this.renderSidebar(user);
+    this.renderTopbar(user);
+    this.showSection('overview');
+    UI.updateNotifBadge();
+    // Animate
+    gsap.fromTo('.sidebar',{x:-20,opacity:0},{x:0,opacity:1,duration:0.5,ease:'power3.out'});
+    gsap.fromTo('.topbar',{y:-10,opacity:0},{y:0,opacity:1,duration:0.4,ease:'power3.out',delay:0.1});
+    gsap.fromTo('.content-area',{opacity:0,y:10},{opacity:1,y:0,duration:0.5,ease:'power3.out',delay:0.2});
+  },
+
+  renderSidebar(user){
+    const initials = getInitials(user.name);
+    const color = getAvatarColor(user.id);
+    document.getElementById('sidebarAvatar').className = `sidebar-avatar ${color}`;
+    document.getElementById('sidebarAvatar').textContent = initials;
+    document.getElementById('sidebarName').textContent = user.name;
+    const roleBadge = document.getElementById('sidebarRole');
+    roleBadge.textContent = user.role; roleBadge.className = `role-badge ${user.role}`;
+
+    const navItems = this.getNavItems(user.role);
+    const nav = document.getElementById('sidebarNav');
+    nav.innerHTML = navItems.map(item => {
+      if(item.type==='label') return `<div class="nav-section-label">${item.label}</div>`;
+      const badge = item.badge ? `<span class="nav-badge" data-for="${item.id}" style="display:none">0</span>` : '';
+      return `<div class="nav-item" data-section="${item.id}" onclick="App.showSection('${item.id}')">
+        <i class="fas ${item.icon}"></i> ${item.label}${badge}
+      </div>`;
+    }).join('');
+    UI.updateNotifBadge();
+  },
+
+  getNavItems(role){
+    const map = {
+      admin: [
+        {type:'label',label:'Main'},
+        {id:'overview',icon:'fa-th-large',label:'Overview'},
+        {type:'label',label:'Management'},
+        {id:'accounts',icon:'fa-users',label:'Manage Accounts'},
+        {id:'sections',icon:'fa-th',label:'Sections'},
+        {id:'announcements',icon:'fa-bullhorn',label:'Announcements'},
+        {type:'label',label:'System'},
+        {id:'notifications',icon:'fa-bell',label:'Notifications',badge:true},
+      ],
+      teacher: [
+        {type:'label',label:'Main'},
+        {id:'overview',icon:'fa-th-large',label:'Overview'},
+        {type:'label',label:'Teaching'},
+        {id:'students',icon:'fa-user-graduate',label:'My Students'},
+        {id:'assignments',icon:'fa-tasks',label:'Assignments'},
+        {id:'progress',icon:'fa-chart-bar',label:'Progress & Grades'},
+        {type:'label',label:'Communication'},
+        {id:'announcements',icon:'fa-bullhorn',label:'Announcements'},
+        {id:'notifications',icon:'fa-bell',label:'Notifications',badge:true},
+      ],
+      student: [
+        {type:'label',label:'Main'},
+        {id:'overview',icon:'fa-th-large',label:'Overview'},
+        {type:'label',label:'Academics'},
+        {id:'assignments',icon:'fa-tasks',label:'My Assignments'},
+        {id:'grades',icon:'fa-star',label:'My Grades'},
+        {type:'label',label:'Info'},
+        {id:'announcements',icon:'fa-bullhorn',label:'Announcements'},
+        {id:'notifications',icon:'fa-bell',label:'Notifications',badge:true},
+      ]
+    };
+    return map[role]||[];
+  },
+
+  renderTopbar(user){
+    const initials = getInitials(user.name);
+    const color = getAvatarColor(user.id);
+    document.getElementById('topbarAvatar').className = `avatar ${color}`;
+    document.getElementById('topbarAvatar').textContent = initials;
+    document.getElementById('topbarName').textContent = user.name;
+    document.getElementById('topbarRole').textContent = user.role;
+  },
+
+  showSection(sectionId){
+    this.currentSection = sectionId;
+    // Update nav active state
+    document.querySelectorAll('.nav-item').forEach(el=>{
+      el.classList.toggle('active', el.dataset.section===sectionId);
+    });
+    // Render content
+    const ca = document.getElementById('contentArea');
+    ca.innerHTML = ''; // clear
+    this.destroyCharts();
+    if(this.currentUser.role==='admin') AdminDash.render(sectionId, ca);
+    else if(this.currentUser.role==='teacher') TeacherDash.render(sectionId, ca);
+    else StudentDash.render(sectionId, ca);
+  },
+
+  destroyCharts(){
+    Object.values(this.charts).forEach(c=>{ try{c.destroy()}catch(e){} });
+    this.charts = {};
+  },
+
+  setTopbarTitle(title, sub=''){
+    document.getElementById('topbarTitle').textContent = title;
+    document.getElementById('topbarSub').textContent = sub;
+  }
+};
+
+/* ============================================================
+   ADMIN DASHBOARD
+   ============================================================ */
+const AdminDash = {
+  render(section, container){
+    const panels = {
+      'overview': ()=>this.renderOverview(container),
+      'accounts': ()=>this.renderAccounts(container),
+      'sections': ()=>this.renderSections(container),
+      'announcements': ()=>this.renderAnnouncements(container),
+      'notifications': ()=>renderNotificationsPanel(container),
+      'profile': ()=>renderProfilePanel(container),
+    };
+    (panels[section]||panels['overview'])();
+  },
+
+  renderOverview(container){
+    App.setTopbarTitle('Dashboard','Welcome back, '+App.currentUser.name.split(' ')[0]);
+    const users = DB.getUsers();
+    const admins = users.filter(u=>u.role==='admin').length;
+    const teachers = users.filter(u=>u.role==='teacher').length;
+    const students = users.filter(u=>u.role==='student').length;
+    const assignments = DB.getAssignments().length;
+    const announcements = DB.getAnnouncements().length;
+
+    container.innerHTML = `
+      <div class="section-panel active">
+        <div class="page-header">
+          <div class="page-header-left">
+            <h1>Admin Dashboard</h1>
+            <p>Overview of the EduCore school management system</p>
+          </div>
+          <div class="page-header-right">
+            <button class="btn btn-primary" onclick="AdminDash.openCreateUserModal('student')"><i class="fas fa-user-plus"></i> Add Student</button>
+            <button class="btn btn-secondary" onclick="AdminDash.openCreateUserModal('teacher')"><i class="fas fa-chalkboard-teacher"></i> Add Teacher</button>
+          </div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card" style="--stat-color:#4f46e5;--stat-bg:rgba(79,70,229,0.1)">
+            <div class="stat-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-info"><div class="val">${users.length}</div><div class="lbl">Total Users</div><div class="sub">${admins} admins</div></div>
+          </div>
+          <div class="stat-card" style="--stat-color:#06b6d4;--stat-bg:rgba(6,182,212,0.1)">
+            <div class="stat-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+            <div class="stat-info"><div class="val">${teachers}</div><div class="lbl">Teachers</div><div class="sub">Active faculty</div></div>
+          </div>
+          <div class="stat-card" style="--stat-color:#22c55e;--stat-bg:rgba(34,197,94,0.1)">
+            <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
+            <div class="stat-info"><div class="val">${students}</div><div class="lbl">Students</div><div class="sub">Enrolled</div></div>
+          </div>
+          <div class="stat-card" style="--stat-color:#f59e0b;--stat-bg:rgba(245,158,11,0.1)">
+            <div class="stat-icon"><i class="fas fa-tasks"></i></div>
+            <div class="stat-info"><div class="val">${assignments}</div><div class="lbl">Assignments</div><div class="sub">${DB.getSubmissions().length} submissions</div></div>
+          </div>
+          <div class="stat-card" style="--stat-color:#a855f7;--stat-bg:rgba(168,85,247,0.1)">
+            <div class="stat-icon"><i class="fas fa-bullhorn"></i></div>
+            <div class="stat-info"><div class="val">${announcements}</div><div class="lbl">Announcements</div><div class="sub">School-wide</div></div>
+          </div>
+          <div class="stat-card" style="--stat-color:#ef4444;--stat-bg:rgba(239,68,68,0.1)">
+            <div class="stat-icon"><i class="fas fa-th"></i></div>
+            <div class="stat-info"><div class="val">16</div><div class="lbl">Sections</div><div class="sub">1201 — 1216</div></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><h3><i class="fas fa-chart-bar" style="color:var(--primary);margin-right:8px"></i>Students per Section</h3></div>
+            <div class="card-body"><div class="chart-container"><canvas id="sectionChart"></canvas></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3><i class="fas fa-chart-pie" style="color:var(--accent);margin-right:8px"></i>User Distribution</h3></div>
+            <div class="card-body"><div class="chart-container"><canvas id="roleChart"></canvas></div></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:20px">
+          <div class="card-header">
+            <h3><i class="fas fa-clock" style="color:var(--warning);margin-right:8px"></i>Recent Accounts</h3>
+            <button class="btn btn-sm btn-secondary" onclick="App.showSection('accounts')">View All</button>
+          </div>
+          <div class="card-body" style="padding:0">
+            <div class="table-wrap"><table>
+              <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Section</th><th>Created</th><th>Actions</th></tr></thead>
+              <tbody id="recentUsersTable"></tbody>
+            </table></div>
+          </div>
+        </div>
+      </div>`;
+    // Charts
+    requestAnimationFrame(()=>{
+      this.renderSectionChart();
+      this.renderRoleChart(admins, teachers, students);
+      this.renderRecentUsers();
+    });
+  },
+
+  renderSectionChart(){
+    const students = DB.getUsers().filter(u=>u.role==='student');
+    const labels = SECTIONS.slice(0,8); // first 8 for space
+    const data = labels.map(s=>students.filter(u=>u.section===s).length);
+    const ctx = document.getElementById('sectionChart');
+    if(!ctx) return;
+    App.charts['sectionChart'] = new Chart(ctx, {
+      type:'bar',
+      data:{ labels, datasets:[{ label:'Students', data, backgroundColor:'rgba(79,70,229,0.7)', borderColor:'rgba(79,70,229,1)', borderWidth:2, borderRadius:6 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{grid:{display:false}}, y:{beginAtZero:true, grid:{color:'rgba(128,128,128,0.1)'}, ticks:{stepSize:1}} } }
+    });
+  },
+
+  renderRoleChart(a,t,s){
+    const ctx = document.getElementById('roleChart');
+    if(!ctx) return;
+    App.charts['roleChart'] = new Chart(ctx, {
+      type:'doughnut',
+      data:{
+        labels:['Admins','Teachers','Students'],
+        datasets:[{ data:[a,t,s], backgroundColor:['rgba(245,158,11,0.8)','rgba(6,182,212,0.8)','rgba(34,197,94,0.8)'], borderWidth:0, hoverOffset:8 }]
+      },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom',labels:{padding:16,font:{size:12}}}} }
+    });
+  },
+
+  renderRecentUsers(){
+    const users = [...DB.getUsers()].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,5);
+    const tbody = document.getElementById('recentUsersTable');
+    if(!tbody) return;
+    if(!users.length){ tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state"><i class="fas fa-users"></i><h3>No users yet</h3></div></td></tr>`; return; }
+    tbody.innerHTML = users.map(u=>`<tr>
+      <td><div style="display:flex;align-items:center;gap:10px">${UI.renderAvatar(u.name,u.id,32)}<span style="font-weight:600">${escHtml(u.name)}</span></div></td>
+      <td><code style="font-size:12px;background:var(--bg);padding:2px 7px;border-radius:5px">@${escHtml(u.username)}</code></td>
+      <td><span class="badge badge-${u.role==='admin'?'warning':u.role==='teacher'?'info':'success'}">${u.role}</span></td>
+      <td>${u.section?`<span class="badge badge-primary">§${u.section}</span>`:'<span class="badge badge-gray">—</span>'}</td>
+      <td style="color:var(--text3);font-size:12px">${formatDate(u.createdAt)}</td>
+      <td><div style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-secondary btn-icon" onclick="AdminDash.openEditUserModal('${u.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-sm btn-danger btn-icon" onclick="AdminDash.deleteUser('${u.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+      </div></td>
+    </tr>`).join('');
+  },
+
+  // ---- ACCOUNTS ----
+  accountsFilter:{ search:'', role:'all', section:'all' },
+
+  renderAccounts(container){
+    App.setTopbarTitle('Manage Accounts','Create, edit, and manage all user accounts');
+    container.innerHTML=`
+      <div class="section-panel active">
+        <div class="page-header">
+          <div class="page-header-left"><h1>Manage Accounts</h1><p>Search, filter, and manage all user accounts</p></div>
+          <div class="page-header-right">
+            <button class="btn btn-primary" onclick="AdminDash.openCreateUserModal('student')"><i class="fas fa-user-plus"></i> New Student</button>
+            <button class="btn btn-secondary" onclick="AdminDash.openCreateUserModal('teacher')"><i class="fas fa-chalkboard-teacher"></i> New Teacher</button>
+            <button class="btn btn-warning" style="color:white" onclick="AdminDash.openCreateUserModal('admin')"><i class="fas fa-user-shield"></i> New Admin</button>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <div class="search-box" style="min-width:280px">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search by name, username, or email..." id="acctSearch" oninput="AdminDash.filterAccounts()" value="${escHtml(this.accountsFilter.search)}">
+          </div>
+          <select class="filter-select" id="acctRoleFilter" onchange="AdminDash.filterAccounts()">
+            <option value="all">All Roles</option>
+            <option value="admin">Admin</option>
+            <option value="teacher">Teacher</option>
+            <option value="student">Student</option>
+          </select>
+          <select class="filter-select" id="acctSectionFilter" onchange="AdminDash.filterAccounts()">
+            <option value="all">All Sections</option>
+            ${SECTIONS.map(s=>`<option value="${s}">Section ${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0">
+            <div class="table-wrap"><table>
+              <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Section</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="accountsTable"></tbody>
+            </table></div>
+          </div>
+        </div>
+        <div id="accountsPagination" style="display:flex;justify-content:center;gap:8px;padding:16px"></div>
+      </div>`;
+    this.renderAccountsTable();
+  },
+
+  filterAccounts(){
+    this.accountsFilter.search = document.getElementById('acctSearch')?.value||'';
+    this.accountsFilter.role = document.getElementById('acctRoleFilter')?.value||'all';
+    this.accountsFilter.section = document.getElementById('acctSectionFilter')?.value||'all';
+    this.renderAccountsTable();
+  },
+
+  renderAccountsTable(){
+    const tbody = document.getElementById('accountsTable');
+    if(!tbody) return;
+    let users = DB.getUsers();
+    const {search, role, section} = this.accountsFilter;
+    if(search){ const q=search.toLowerCase(); users=users.filter(u=>u.name.toLowerCase().includes(q)||u.username.toLowerCase().includes(q)||(u.email||'').toLowerCase().includes(q)); }
+    if(role!=='all') users=users.filter(u=>u.role===role);
+    if(section!=='all') users=users.filter(u=>u.section===section);
+    if(!users.length){ tbody.innerHTML=`<tr><td colspan="7"><div class="empty-state"><i class="fas fa-search"></i><h3>No accounts found</h3><p>Try adjusting your search or filters</p></div></td></tr>`; return; }
+    tbody.innerHTML = users.map(u=>`<tr>
+      <td><div style="display:flex;align-items:center;gap:10px">${UI.renderAvatar(u.name,u.id,32)}<div><div style="font-weight:600;font-size:13.5px">${escHtml(u.name)}</div><div style="font-size:11.5px;color:var(--text3)">${escHtml(u.phone||'')}</div></div></div></td>
+      <td><code style="font-size:12px;background:var(--bg);padding:2px 7px;border-radius:5px">@${escHtml(u.username)}</code></td>
+      <td><span class="badge badge-${u.role==='admin'?'warning':u.role==='teacher'?'info':'success'}">${u.role}</span></td>
+      <td>${u.section?`<span class="badge badge-primary">§${u.section}</span>`:'<span class="badge badge-gray">N/A</span>'}</td>
+      <td style="font-size:12.5px;color:var(--text2)">${escHtml(u.email||'')}</td>
+      <td><span class="badge badge-${u.isActive?'success':'danger'}">${u.isActive?'Active':'Inactive'}</span></td>
+      <td><div style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-secondary btn-icon" onclick="AdminDash.openEditUserModal('${u.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-sm btn-secondary btn-icon" onclick="AdminDash.openResetPasswordModal('${u.id}')" title="Reset Password"><i class="fas fa-key"></i></button>
+        ${u.id!==App.currentUser.id?`<button class="btn btn-sm btn-danger btn-icon" onclick="AdminDash.deleteUser('${u.id}')" title="Delete"><i class="fas fa-trash"></i></button>`:''}
+      </div></td>
+    </tr>`).join('');
+  },
+
+  // ---- SECTIONS ----
+  renderSections(container){
+    App.setTopbarTitle('Sections','View and manage all 16 sections');
+    const students = DB.getUsers().filter(u=>u.role==='student');
+    const teachers = DB.getUsers().filter(u=>u.role==='teacher');
+    container.innerHTML=`
+      <div class="section-panel active">
+        <div class="page-header">
+          <div class="page-header-left"><h1>School Sections</h1><p>Sections 1201 — 1216 overview</p></div>
+        </div>
+        <div class="section-cards-grid">
+          ${SECTIONS.map(s=>{
+            const stu = students.filter(u=>u.section===s).length;
+            const tch = teachers.filter(u=>(u.sections||[]).includes(s)).length;
+            return `<div class="section-card" onclick="AdminDash.viewSection('${s}')">
+              <div class="num">${s}</div>
+              <div class="lbl">Section</div>
+              <div class="count"><i class="fas fa-user-graduate" style="font-size:10px;color:var(--student-color)"></i> ${stu} students</div>
+              <div class="count" style="margin-top:2px"><i class="fas fa-chalkboard-teacher" style="font-size:10px;color:var(--teacher-color)"></i> ${tch} teachers</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  },
+
+  viewSection(secId){
+    App.setTopbarTitle('Section '+secId,'Students and teachers in this section');
+    const students = DB.getUsers().filter(u=>u.role==='student'&&u.section===secId);
+    const teachers = DB.getUsers().filter(u=>u.role==='teacher'&&(u.sections||[]).includes(secId));
+    const ca = document.getElementById('contentArea');
+    ca.innerHTML=`
+      <div class="section-panel active">
+        <div class="page-header">
+          <div class="page-header-left"><h1>Section ${secId}</h1><p>${students.length} students · ${teachers.length} teachers</p></div>
+          <div class="page-header-right">
+            <button class="btn btn-secondary" onclick="App.showSection('sections')"><i class="fas fa-arrow-left"></i> Back</button>
+            <button class="btn btn-primary" onclick="AdminDash.openCreateUserModal('student','${secId}')"><i class="fas fa-plus"></i> Add Student</button>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><h3><i class="fas fa-user-graduate" style="color:var(--student-color);margin-right:8px"></i>Students (${students.length})</h3></div>
+            <div class="card-body" style="padding:0">
+              ${students.length?`<div class="table-wrap"><table><thead><tr><th>Name</th><th>Username</th><th>Actions</th></tr></thead><tbody>
+                ${students.map(u=>`<tr>
+                  <td><div style="display:flex;align-items:center;gap:10px">${UI.renderAvatar(u.name,u.id,28)}<span style="font-weight:600">${escHtml(u.name)}</span></div></td>
+                  <td><code style="font-size:11.5px;background:var(--bg);padding:2px 6px;border-radius:4px">@${escHtml(u.username)}</code></td>
+                  <td><div style="display:flex;gap:6px">
+                    <button class="btn btn-sm btn-secondary btn-icon" onclick="AdminDash.openEditUserModal('${u.id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger btn-icon" onclick="AdminDash.deleteUser('${u.id}')"><i class="fas fa-trash"></i></button>
+                  </div></td>
+                </tr>`).join('')}
+              </tbody></table></div>`
+              :`<div class="empty-state"><i class="fas fa-user-graduate"></i><h3>No students</h3><p>No students assigned to this section</p></div>`}
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3><i class="fas fa-chalkboard-teacher" style="color:var(--teacher-color);margin-right:8px"></i>Teachers (${teachers.length})</h3></div>
+            <div class="card-body" style="padding:0">
+              ${teachers.length?`<div class="table-wrap"><table><thead><tr><th>Name</th><th>Username</th><th>Actions</th></tr></thead><tbody>
+                ${teachers.map(u=>`<tr>
+                  <td><div style="display:flex;align-items:center;gap:10px">${UI.renderAvatar(u.name,u.id,28)}<span style="font-weight:600">${escHtml(u.name)}</span></div></td>
+                  <td><code style="font-size:11.5px;background:var(--bg);padding:2px 6px;border-radius:4px">@${escHtml(u.username)}</code></td>
+                  <td><button class="btn btn-sm btn-secondary btn-icon" onclick="AdminDash.openEditUserModal('${u.id}')"><i class="fas fa-edit"></i></button></td>
+                </tr>`).join('')}
+              </tbody></table></div>`
+              :`<div class="empty-state"><i class="fas fa-chalkboard-teacher"></i><h3>No teachers</h3><p>No teachers assigned to this section</p></div>`}
+            </div>
+          </div>
+        </div>
+      </div>`;
+  },
+
+  // ---- ANNOUNCEMENTS ----
+  renderAnnouncements(container){
+    App.setTopbarTitle('Announcements','Manage school-wide announcements');
+    const anns = DB.getAnnouncements().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+    container.innerHTML=`
+      <div class="section-panel active">
+        <div class="page-header">
+          <div class="page-header-left"><h1>Announcements</h1><p>Post and manage school-wide announcements</p></div>
+          <div class="page-header-right">
+            <button class="btn btn-primary" onclick="AdminDash.openAnnouncementModal()"><i class="fas fa-plus"></i> New Announcement</button>
+          </div>
+        </div>
+        <div id="annList">
+          ${anns.length?anns.map(a=>this.renderAnnCard(a)).join('')
+            :`<div class="empty-state"><i class="fas fa-bullhorn"></i><h3>No announcements yet</h3><p>Click "New Announcement" to post one</p></div>`}
+        </div>
+      </div>
+      ${this.announcementModalHtml()}`;
+  },
+
+  renderAnnCard(a){
+    return `<div class="announcement-card">
+      <div class="announcement-card-header">
+        <div>
+          <div class="announcement-card-title">${escHtml(a.title)}</div>
+          <div class="announcement-card-meta">
+            <span><i class="fas fa-user"></i> ${escHtml(a.authorName)}</span>
+            <span class="badge badge-${a.authorRole==='admin'?'warning':a.authorRole==='teacher'?'info':'success'}">${a.authorRole}</span>
+            <span><i class="fas fa-clock"></i> ${timeAgo(a.createdAt)}</span>
+            ${a.targetSection?`<span class="badge badge-primary">§${a.targetSection}</span>`:`<span class="badge badge-gray">All Sections</span>`}
+            <span class="badge badge-${a.type==='reminder'?'warning':'info'}">${a.type||'announcement'}</span>
+          </div>
+        </div>
+        ${App.currentUser.role==='admin'?`<button class="btn btn-sm btn-danger btn-icon" onclick="AdminDash.deleteAnnouncement('${a.id}')"><i class="fas fa-trash"></i></button>`:''}
+      </div>
+      <div class="announcement-card-body">${escHtml(a.content)}</div>
+    </div>`;
+  },
+
+  announcementModalHtml(){
+    return `<div class="modal-overlay" id="annModal">
+      <div class="modal">
+        <div class="modal-header"><h3>New Announcement</h3><div class="modal-close" onclick="UI.closeModal('annModal')"><i class="fas fa-times"></i></div></div>
+        <div class="modal-body">
+          <div class="field"><label>Title</label><input type="text" id="annTitle" placeholder="Announcement title"></div>
+          <div class="field"><label>Content</label><textarea id="annContent" rows="4" placeholder="Write your announcement..."></textarea></div>
+          <div class="form-row">
+            <div class="field"><label>Target Section (optional)</label><select id="annSection"><option value="">All Sections (School-wide)</option>${SECTIONS.map(s=>`<option value="${s}">Section ${s}</option>`).join('')}</select></div>
+            <div class="field"><label>Type</label><select id="annType"><option value="announcement">Announcement</option><option value="reminder">Reminder</option></select></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="UI.closeModal('annModal')">Cancel</button>
+          <button class="btn btn-primary" onclick="AdminDash.saveAnnouncement()"><i class="fas fa-paper-plane"></i> Post</button>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  openAnnouncementModal(){ UI.openModal('annModal'); },
+
+  saveAnnouncement(){
+    const title = document.getElementById('annTitle')?.value?.trim();
+    const content = document.getElementById('annContent')?.value?.trim();
+    const targetSection = document.getElementById('annSection')?.value||null;
+    const type = document.getElementById('annType')?.value||'announcement';
+    if(!title||!content){ UI.showToast('Missing Info','Please fill in all required fields','warning'); return; }
+    const ann = { id:DB.uid(), title, content, authorId:App.currentUser.id, authorName:App.currentUser.name, authorRole:App.currentUser.role, targetSection:targetSection||null, createdAt:new Date().toISOString(), type };
+    const anns = DB.getAnnouncements(); anns.unshift(ann); DB.saveAnnouncements(anns);
+    // Notify affected students
+    const students = DB.getUsers().filter(u=>u.role==='student'&&(!targetSection||u.section===targetSection));
+    students.forEach(s=>DB.addNotification(s.id,title,'New '+type+': '+content.slice(0,60)+'...',type));
+    UI.closeModal('annModal');
+    UI.showToast('Posted!','Announcement has been posted successfully','success');
+    App.showSection('announcements');
+  },
+
+  deleteAnnouncement(id){
+    Swal.fire({ title:'Delete Announcement?', text:'This cannot be undone.', icon:'warning', showCancelButton:true, confirmButtonColor:'#ef4444', confirmButtonText:'Delete' })
+      .then(r=>{ if(r.isConfirmed){ const anns=DB.getAnnouncements().filter(a=>a.id!==id); DB.saveAnnouncements(anns); UI.showToast('Deleted','Announcement removed','success'); App.showSection('announcements'); } });
+  },
+
+  // ---- CREATE/EDIT USER MODALS ----
+  openCreateUserModal(role='student', defaultSection=''){
+    const html = `<div class="modal-overlay" id="createUserModal">
+      <div class="modal modal-lg">
+        <div class="modal-header"><h3>Create ${role.charAt(0).toUpperCase()+role.slice(1)} Account</h3><div class="modal-close" onclick="UI.closeModal('createUserModal')"><i class="fas fa-times"></i></div></div>
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="field"><label>Full Name *</label><input type="text" id="cf_name" placeholder="Full name"></div>
+            <div class="field"><label>Username *</label><input type="text" id="cf_username" placeholder="Unique username"></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>Password *</label><input type="password" id="cf_password" placeholder="Password"></div>
+            <div class="field"><label>Email</label><input type="email" id="cf_email" placeholder="Email address"></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>Phone</label><input type="text" id="cf_phone" placeholder="Phone number"></div>
+            <div class="field"><label>Role</label><select id="cf_role"><option value="student" ${role==='student'?'selected':''}>Student</option><option value="teacher" ${role==='teacher'?'selected':''}>Teacher</option><option value="admin" ${role==='admin'?'selected':''}>Admin</option></select></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>Primary Section</label><select id="cf_section"><option value="">No Section</option>${SECTIONS.map(s=>`<option value="${s}" ${(defaultSection||'')==s?'selected':''}>${s}</option>`).join('')}</select></div>
+            <div class="field" id="cf_sections_field"><label>Additional Sections (Teachers)</label><div id="cf_sections_checkboxes" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-height:100px;overflow-y:auto;">${SECTIONS.map(s=>`<label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;"><input type="checkbox" value="${s}" class="sections-cb"> ${s}</label>`).join('')}</div></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="UI.closeModal('createUserModal')">Cancel</button>
+          <button class="btn btn-primary" onclick="AdminDash.saveNewUser()"><i class="fas fa-save"></i> Create Account</button>
+        </div>
+      </div>
+    </div>`;
+    // Remove existing modal if any
+    const existing = document.getElementById('createUserModal');
+    if(existing) existing.remove();
+    document.body.insertAdjacentHTML('beforeend', html);
+    UI.openModal('createUserModal');
+  },
+
+  saveNewUser(){
+    const name=document.getElementById('cf_name')?.value?.trim();
+    const username=document.getElementById('cf_username')?.value?.trim();
+    const password=document.getElementById('cf_password')?.value;
+    const email=document.getElementById('cf_email')?.value?.trim();
+    const phone=document.getElementById('cf_phone')?.value?.trim();
+    const role=document.getElementById('cf_role')?.value||'student';
+    const section=document.getElementById('cf_section')?.value||null;
+    const sections=[...document.querySelectorAll('.sections-cb:checked')].map(c=>c.value);
+
+    if(!name||!username||!password){ UI.showToast('Missing Fields','Name, username, and password are required','warning'); return; }
+    if(DB.getUserByUsername(username)){ UI.showToast('Username Taken','This username is already in use','danger'); return; }
+    if(password.length<6){ UI.showToast('Weak Password','Password must be at least 6 characters','warning'); return; }
+
+    const newUser = { id:DB.uid(), username, password, role, name, email:email||'', phone:phone||'', section:section||null, sections: role==='teacher'?(section?[section,...sections.filter(s=>s!==section)]:sections):[], avatar:null, createdAt:new Date().toISOString(), isActive:true };
+    const users = DB.getUsers(); users.push(newUser); DB.saveUsers(users);
+    UI.closeModal('createUserModal');
+    UI.showToast('Account Created',`${name}'s account has been created successfully`,'success');
+    App.showSection('accounts');
+  },
+
+  openEditUserModal(userId){
+    const user = DB.getUserById(userId);
+    if(!user){ UI.showToast('Error','User not found','danger'); return; }
+    const html = `<div class="modal-overlay" id="editUserModal">
+      <div class="modal modal-lg">
+        <div class="modal-header"><h3>Edit Account — ${escHtml(user.name)}</h3><div class="modal-close" onclick="UI.closeModal('editUserModal')"><i class="fas fa-times"></i></div></div>
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="field"><label>Full Name *</label><input type="text" id="ef_name" value="${escHtml(user.name)}" placeholder="Full name"></div>
+            <div class="field"><label>Username *</label><input type="text" id="ef_username" value="${escHtml(user.username)}" placeholder="Username"></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>Email</label><input type="email" id="ef_email" value="${escHtml(user.email||'')}" placeholder="Email"></div>
+            <div class="field"><label>Phone</label><input type="text" id="ef_phone" value="${escHtml(user.phone||'')}" placeholder="Phone"></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>Role</label><select id="ef_role">${ROLES.map(r=>`<option value="${r}" ${user.role===r?'selected':''}>${r.charAt(0).toUpperCase()+r.slice(1)}</option>`).join('')}</select></div>
+            <div class="field"><label>Primary Section</label><select id="ef_section"><option value="">No Section</option>${SECTIONS.map(s=>`<option value="${s}" ${user.section===s?'selected':''}>${s}</option>`).join('')}</select></div>
+          </div>
+          <div class="field"><label>Additional Sections</label><div id="ef_sections_checkboxes" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${SECTIONS.map(s=>`<label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;"><input type="checkbox" value="${s}" class="sections-cb-e" ${(user.sections||[]).includes(s)?'checked':''}> ${s}</label>`).join('')}</div></div>
+          <div class="field"><label>Status</label><select id="ef_active"><option value="1" ${user.isActive?'selected':''}>Active</option><option value="0" ${!user.isActive?'selected':''}>Inactive</option></select></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="UI.closeModal('editUserModal')">Cancel</button>
+          <button class="btn btn-primary" onclick="AdminDash.saveEditUser('${userId}')"><i class="fas fa-save"></i> Save Changes</button>
+        </div>
+      </div>
+    </div>`;
+    const existing = document.getElementById('editUserModal');
+    if(existing) existing.remove();
+    document.body.insertAdjacentHTML('beforeend', html);
+    UI.openModal('editUserModal');
+  },
+
+  saveEditUser(userId){
+    const name=document.getElementById('ef_name')?.value?.trim();
+    const username=document.getElementById('ef_username')?.value?.trim();
+    const email=document.getElementById('ef_email')?.value?.trim();
+    const phone=document.getElementById('ef_phone')?.value?.trim();
+    const role=document.getElementById('ef_role')?.value;
+    const section=document.getElementById('ef_section')?.value||null;
+    const sections=[...document.querySelectorAll('.sections-cb-e:checked')].map(c=>c.value);
+    const isActive=document.getElementById('ef_active')?.value==='1';
+
+    if(!name||!username){ UI.showToast('Missing Fields','Name and username are required','warning'); return; }
+    const existing = DB.getUserByUsername(username);
+    if(existing && existing.id !== userId){ UI.showToast('Username Taken','This username is already used by another account','danger'); return; }
+
+    const users = DB.getUsers();
+    const idx = users.findIndex(u=>u.id===userId);
+    if(idx===-1){ UI.showToast('Error','User not found','danger'); return; }
+    users[idx] = { ...users[idx], name, username, email:email||'', phone:phone||'', role, section:section||null, sections: role==='teacher'?(section?[section,...sections.filter(s=>s!==section)]:sections):[], isActive };
+    DB.saveUsers(users);
+    // Update current user if editing self
+    if(userId===App.currentUser.id){ App.currentUser=users[idx]; DB.setCurrentUser(users[idx]); App.renderSidebar(users[idx]); App.renderTopbar(users[idx]); }
+    UI.closeModal('editUserModal');
+    UI.showToast('Saved','Account updated successfully','success');
+    App.showSection('accounts');
+  },
+
+  openResetPasswordModal(userId){
+    const user=DB.getUserById(userId);
+    if(!user) return;
+    Swal.fire({
+      title:'Reset Password',
+      html:`<div style="text-align:left"><p style="margin-bottom:10px;font-size:13px">Set new password for <strong>${escHtml(user.name)}</strong></p><input id="swal_pw" class="swal2-input" type="password" placeholder="New password (min 6 chars)"></div>`,
+      showCancelButton:true, confirmButtonText:'Reset', confirmButtonColor:'#4f46e5',
+      preConfirm:()=>{ const pw=document.getElementById('swal_pw').value; if(pw.length<6){ Swal.showValidationMessage('Password must be at least 6 characters'); return false; } return pw; }
+    }).then(r=>{ if(r.isConfirmed){ const users=DB.getUsers(); const idx=users.findIndex(u=>u.id===userId); if(idx>-1){ users[idx].password=r.value; DB.saveUsers(users); UI.showToast('Password Reset',`Password for ${user.name} has been updated`,'success'); } } });
+  },
+
+  deleteUser(userId){
+    if(userId===App.currentUser.id){ UI.showToast('Error','You cannot delete your own account','danger'); return; }
+    const user=DB.getUserById(userId);
+    if(!user) return;
+    Swal.fire({ title:'Delete Account?', html:`Delete <strong>${escHtml(user.name)}</strong>'s account? This cannot be undone.`, icon:'warning', showCancelButton:true, confirmButtonColor:'#ef4444', confirmButtonText:'Delete' })
+      .then(r=>{ if(r.isConfirmed){ const users=DB.getUsers().filter(u=>u.id!==userId); DB.saveUsers(users); UI.showToast('Deleted',`${user.name}'s account has been deleted`,'success'); App.showSection('accounts'); } });
+  }
+};
+
+/* ============================================================
+   TEACHER DASHBOARD
+   ============================================================ */
+const TeacherDash = {
+  render(section, container){
+    const panels = {
+      'overview': ()=>this.renderOverview(container),
+      'students': ()=>this.renderStudents(container),
+      'assignments': ()=>this.renderAssignments(container),
+      'progress': ()=>this.renderProgress(container),
+      'announcements': ()=>this.renderAnnouncements(container),
+      'notifications': ()=>renderNotificationsPanel(container),
+      'profile': ()=>renderProfilePanel(container),
+    };
+    (panels[section]||panels['overview'])();
+  },
+
+  getMyStudents(){
+    const teacher = App.currentUser;
+    const mySections = teacher.sections||[teacher.section].filter(Boolean);
+    return DB.getUsers().filter(u=>u.role==='student'&&mySections.includes(u.section));
+  },
+
+  getMyAssignments(){
+    return DB.getAssignments().filter(a=>a.teacherId===App.currentUser.id);
+  },
+
+  renderOverview(container){
+    App.setTopbarTitle('Dashboard','Welcome, '+App.currentUser.name.split(' ')[0]);
+    const teacher = App.currentUser;
+    const mySections = teacher.sections||[teacher.section].filter(Boolean);
+    const students = this.getMyStudents();
+    const assignments = this.getMyAssignments();
+    const subs = DB.getSubmissions().filter(s=>assignments.map(a=>a.id).includes(s.assignmentId));
+    const pending = assignments.filter(a=>{ const submitted=subs.filter(s=>s.assignmentId===a.id).length; return submitted < students.length; }).length;
+
+    container.innerHTML=`
+      <div class="section-panel active">
+        <div class="page-header">
+          <div class="page-header-left"><h1>Teacher Dashboard</h1><p>Sections: ${mySections.join(', ')||'None assigned'}</p></div>
+          <div class="page-header-right">
+            <button class="btn btn-primary" onclick="TeacherDash.openCreateAssignment()"><i class="fas fa-plus"></i> New Assignment</button>
+          </div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card" style="--stat-color:#4f46e5;--stat-bg:rgba(79,70,229,0.1)">
+            <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
+            <div class="stat-info"><div class="val">${students.length}</div><div class="lbl">My Students</div><div class="sub">${mySections.length} sections</div></div>
+          </div>
+          <div class="stat-card" style="--stat-color:#06b6d4;--stat-bg:rgba(6,182,212,0.1)">
+            <div class="stat-icon"><i class="fas fa-tasks"></i></div>
+            <div class="stat-info"><div class="val">${assignments.length}</div><div class="lbl">Assignments</div><div class="sub">${pending} pending</div></div>
+          </div>
+          <div class="stat-card" style="--stat-color:#22c55e;--stat-bg:rgba(34,197,94,0.1)">
+            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-info"><div class="val">${subs.length}</div><div class="lbl">Submissions</div><div class="sub">Total received</div></div>
+          </div>
+          <div class="stat-card" style="--stat-color:#f59e0b;--stat-bg:rgba(245,158,11,0.1)">
+            <div class="stat-icon"><i class="fas fa-star"></i></div>
+            <div class="stat-info"><div class="val">${subs.length?Math.round(subs.reduce((s,b)=>s+b.score,0)/subs.length)+'%':'N/A'}</div><div class="lbl">Avg Grade</div><div class="sub">Class average</div></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><h3><i class="fas fa-tasks" style="color:var(--primary);margin-right:8px"></i>Recent Assignments</h3><button class="btn btn-sm btn-secondary" onclick="App.showSection('assignments')">View All</button></div>
+            <div class="card-body" style="padding:0">
+              ${assignments.length?`<div class="table-wrap"><table><thead><tr><th>Title</th><th>Section</th><th>Deadline</th><th>Submissions</th></tr></thead><tbody>
+                ${assignments.slice(0,4).map(a=>{ const submitted=subs.filter(s=>s.assignmentId===a.id).length; const total=DB.getUsers().filter(u=>u.role==='student'&&u.section===a.section).length; return `<tr>
+                  <td style="font-weight:600">${escHtml(a.title)}</td>
+                  <td><span class="badge badge-primary">§${a.section}</span></td>
+                  <td style="font-size:12px;color:${isOverdue(a.deadline)?'var(--danger)':isDeadlineSoon(a.deadline)?'var(--warning)':'var(--text3)'}">${a.deadline?formatDate(a.deadline):'No deadline'}</td>
+                  <td><span style="font-size:13px;font-weight:600">${submitted}/${total}</span></td>
+                </tr>`;}).join('')}
+              </tbody></table></div>`
+              :`<div class="empty-state"><i class="fas fa-tasks"></i><h3>No assignments yet</h3><p>Create your first assignment</p></div>`}
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3><i class="fas fa-chart-pie" style="color:var(--accent);margin-right:8px"></i>Submission Rate</h3></div>
+            <div class="card-body"><div class="chart-container"><canvas id="subRateChart"></canvas></div></div>
+          </div>
+        </div>
+      </div>`;
+    requestAnimationFrame(()=>{
+      const ctx=document.getElementById('subRateChart');
+      if(ctx && assignments.length){
+        const totalExpected = students.length * assignments.length;
+        const submitted = subs.length;
+        App.charts['subRateChart'] = new Chart(ctx,{
+          type:'doughnut',
+          data:{labels:['Submitted','Pending'],datasets:[{data:[submitted,Math.max(0,totalExpected-submitted)],backgroundColor:['rgba(34,197,94,0.8)','rgba(239,68,68,0.8)'],borderWidth:0,hoverOffset:6}]},
+          options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{padding:16,font:{size:12}}}}}
+        });
+      }
+    });
+  },
+
+  renderStudents(container){
+    App.setTopbarTitle('My Students','View and manage students in your sections');
+    const teacher = App.currentUser;
+    const mySections = teacher.sections||[teacher.section].filter(Boolean);
+    const students = this.getMyStudents();
+    const subs = DB.getSubmissions();
+    const assignments = this.getMyAssignments();
+
+    container.innerHTML=`
+      <div class="section-panel active">
+        <div class="page-header">
+          <div class="page-header-left"><h1>My Students</h1><p>${students.length} students across ${mySections.length} section(s)</p></div>
+        </div>
+        <div class="filter-bar">
+          <div class="search-box"><i class="fas fa-search"></i><input type="text" id="stuSearch" placeholder="Search students..." oninput="TeacherDash.filterStudents()"></div>
+          <select class="filter-select" id="stuSection" onchange="TeacherDash.filterStudents()">
+            <option value="all">All My Sections</option>
+            ${mySections.map(s=>`<option value="${s}">Section ${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0">
+            <div class="table-wrap"><table>
+              <thead><tr><th>Student</th><th>Section</th><th>Assignments Done</th><th>Avg Grade</th><th>Actions</th></tr></thead>
+              <tbody id="teacherStudentsTable"></tbody>
+            </table></div>
+          </div>
+        </div>
+      </div>`;
+    this.renderStudentsTable(students, assignments, subs);
+  },
+
+  filterStudents(){
+    const q=(document.getElementById('stuSearch')?.value||'').toLowerCase();
+    const sec=document.getElementById('stuSection')?.value||'all';
+    const teacher=App.currentUser;
+    const mySections=teacher.sections||[teacher.section].filter(Boolean);
+    let students=DB.getUsers().filter(u=>u.role==='student'&&mySections.includes(u.section));
+    if(q) students=students.filter(u=>u.name.toLowerCase().includes(q)||u.username.toLowerCase().includes(q));
+    if(sec!=='all') students=students.filter(u=>u.section===sec);
+    this.renderStudentsTable(students, this.getMyAssignments(), DB.getSubmissions());
+  },
+
+  renderStudentsTable(students, assignments, subs){
+    const tbody=document.getElementById('teacherStudentsTable');
+    if(!tbody) return;
+    if(!students.length){ tbody.innerHTML=`<tr><td colspan="5"><div class="empty-state"><i class="fas fa-user-graduate"></i><h3>No students found</h3></div></td></tr>`; return; }
+    tbody.innerHTML=students.map(s=>{
+      const mySubs=subs.filter(sub=>sub.studentId===s.id&&assignments.map(a=>a.id).includes(sub.assignmentId));
+      const myAssign=assignments.filter(a=>a.section===s.section);
+      const avg=mySubs.length?Math.round(mySubs.reduce((a,b)=>a+b.score,0)/mySubs.length):null;
+      return `<tr>
+        <td><div style="display:flex;align-items:center;gap:10px">${UI.renderAvatar(s.name,s.id,32)}<div><div style="font-weight:600">${escHtml(s.name)}</div><div style="font-size:11.5px;color:var(--text3)">@${escHtml(s.username)}</div></div></div></td>
+        <td><span class="badge badge-primary">§${s.section}</span></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="flex:1"><div class="progress-bar"><div class="progress-fill" style="width:${myAssign.length?Math.round(mySubs.length/myAssign.length*100):0}%;background:${getGradeColor(myAssign.length?Math.round(mySubs.length/myAssign.length*100):0)}"></div></div></div>
+            <span style="font-size:12px;font-weight:600;white-space:nowrap">${mySubs.length}/${myAssign.length}</span>
+          </div>
+        </td>
+        <td>${avg!==null?`<span style="font-weight:700;color:${getGradeColor(avg)}">${avg}% <span style="font-size:10px">(${getGradeLabel(avg)})</span></span>`:'<span class="badge badge-gray">N/A</span>'}</td>
+        <td><button class="btn btn-sm btn-secondary" onclick="TeacherDash.viewStudentDetail('${s.id}')"><i class="fas fa-chart-bar"></i> View</button></td>
+      </tr>`;
+    }).join('');
+  },
+
+  viewStudentDetail(studentId){
+    const student=DB.getUserById(studentId);
+    if(!student) return;
+    const assignments=this.getMyAssignments().filter(a=>a.section===student.section);
+    const subs=DB.getSubmissions().filter(s=>s.studentId===studentId);
+    Swal.fire({
+      title:student.name,
+      html:`<div style="text-align:left">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <div><strong>Section:</strong> ${student.section||'N/A'}</div>
+          <div><strong>Username:</strong> @${escHtml(student.username)}</div>
+          <div><strong>Email:</strong> ${escHtml(student.email||'N/A')}</div>
+          <div><strong>Submissions:</strong> ${subs.length}/${assignments.length}</div>
+        </div>
+        <table style="width:100%;font-size:13px;border-collapse:collapse">
+          <thead><tr style="border-bottom:1px solid #e2e8f0"><th style="text-align:left;padding:6px 4px">Assignment</th><th style="text-align:left;padding:6px 4px">Score</th><th style="text-align:left;padding:6px 4px">Date</th></tr></thead>
+          <tbody>${assignments.map(a=>{ const sub=subs.find(s=>s.assignmentId===a.id); return `<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px 4px;font-weight:600">${escHtml(a.title)}</td><td style="padding:6px 4px">${sub?`<span style="font-weight:700;color:${getGradeColor(sub.score)}">${sub.score}%</span>`:'<em style="color:#94a3b8">Not submitted</em>'}</td><td style="padding:6px 4px;font-size:11px;color:#94a3b8">${sub?formatDateTime(sub.submittedAt):'—'}</td></tr>`;}).join('')}</tbody>
+        </table>
+      </div>`,
+      confirmButtonText:'Close', confirmButtonColor:'#4f46e5', width:'560px'
+    });
+  },
+
+  // ---- ASSIGNMENTS ----
+  renderAssignments(container){
+    App.setTopbarTitle('Assignments','Create and manage assignments for your students');
+    const assignments=this.getMyAssignments().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+    const subs=DB.getSubmissions();
+    const students=this.getMyStudents();
+
+    container.innerHTML=`
+      <div class="section-panel active">
+        <div class="page-header">
+          <div class="page-header-left"><h1>Assignments</h1><p>${assignments.length} assignments created</p></div>
+          <div class="page-header-right">
+            <button class="btn btn-primary" onclick="TeacherDash.openCreateAssignment()"><i class="fas fa-plus"></i> Create Assignment</button>
+          </div>
+        </div>
+        ${assignments.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
+          ${assignments.map(a=>{
+            const mySubs=subs.filter(s=>s.assignmentId===a.id);
+            const total=students.filter(u=>u.section===a.section).length;
+            const avg=mySubs.length?Math.round(mySubs.reduce((s,b)=>s+b.score,0)/mySubs.length):null;
+            const rate=total?Math.round(mySubs.length/total*100):0;
+            const soon=isDeadlineSoon(a.deadline), over=isOverdue(a.deadline);
+            const acColor=over?'var(--danger)':soon?'var(--warning)':'var(--primary)';
+            return `<div class="assignment-card" style="--ac:${acColor};cursor:default">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+                <div class="assignment-card-title">${escHtml(a.title)}</div>
+                <div style="display:flex;gap:6px">
+                  <button class="btn btn-sm btn-secondary btn-icon" onclick="TeacherDash.viewSubmissions('${a.id}')" title="View Submissions"><i class="fas fa-list-check"></i></button>
+                  <button class="btn btn-sm btn-danger btn-icon" onclick="TeacherDash.deleteAssignment('${a.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+                </div>
+              </div>
+              <div class="assignment-card-meta">
+                <span><i class="fas fa-th"></i> Section ${escHtml(a.section)}</span>
+                <span><i class="fas fa-question-circle"></i> ${a.questions.length} questions</span>
+                <span style="color:${over?'var(--danger)':soon?'var(--warning)':'var(--text3)'}"><i class="fas fa-clock"></i> ${a.deadline?formatDate(a.deadline):'No deadline'}</span>
+                ${over?'<span class="badge badge-danger" style="font-size:10px">Overdue</span>':soon?'<span class="badge badge-warning" style="font-size:10px">Due Soon</span>':''}
+              </div>
+              ${a.description?`<div class="assignment-card-desc">${escHtml(a.description)}</div>`:''}
+              <div style="margin-top:12px">
+                <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+                  <span style="color:var(--text2)">Submissions</span>
+                  <span style="font-weight:600">${mySubs.length}/${total} · ${avg!==null?avg+'% avg':'—'}</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" style="width:${rate}%"></div></div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`:`<div class="empty-state" style="margin-top:40px"><i class="fas fa-tasks"></i><h3>No assignments yet</h3><p>Create your first assignment for your students</p><button class="btn btn-primary" style="margin-top:16px" onclick="TeacherDash.openCreateAssignment()"><i class="fas fa-plus"></i> Create Assignment</button></div>`}
+      </div>`;
+  },
+
+  viewSubmissions(assignmentId){
+    const assignment=DB.getAssignmentById(assignmentId);
+    if(!assignment) return;
+    const subs=DB.getSubmissions().filter(s=>s.assignmentId===assignmentId);
+    const students=DB.getUsers().filter(u=>u.role==='student'&&u.section===assignment.section);
+    Swal.fire({
+      title:'Submissions — '+assignment.title,
+      html:`<div style="max-height:400px;overflow-y:auto">
+        <p style="font-size:13px;margin-bottom:12px;color:#64748b">${subs.length}/${students.length} submitted</p>
+        <table style="width:100%;font-size:13px;border-collapse:collapse">
+          <thead><tr style="border-bottom:1px solid #e2e8f0"><th style="text-align:left;padding:6px 8px">Student</th><th style="text-align:center;padding:6px 8px">Score</th><th style="text-align:center;padding:6px 8px">Grade</th><th style="text-align:left;padding:6px 8px">Submitted</th></tr></thead>
+          <tbody>
+            ${students.map(s=>{ const sub=subs.find(b=>b.studentId===s.id); return `<tr style="border-bottom:1px solid #f1f5f9">
+              <td style="padding:8px"><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#818cf8);display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:700">${getInitials(s.name)}</div>${escHtml(s.name)}</div></td>
+              <td style="text-align:center;font-weight:700;color:${sub?getGradeColor(sub.score):'#94a3b8'}">${sub?sub.score+'%':'—'}</td>
+              <td style="text-align:center">${sub?`<span style="font-weight:700;color:${getGradeColor(sub.score)}">${getGradeLabel(sub.score)}</span>`:'<em style="color:#94a3b8">N/A</em>'}</td>
+              <td style="font-size:11px;color:#94a3b8">${sub?formatDateTime(sub.submittedAt):'Not submitted'}</td>
+            </tr>`;}).join('')}
+          </tbody>
+        </table>
+      </div>`,
+      confirmButtonText:'Close', confirmButtonColor:'#4f46e5', width:'620px'
+    });
+  },
+
+  deleteAssignment(assignmentId){
+    Swal.fire({ title:'Delete Assignment?', text:'All related submissions will also be removed.', icon:'warning', showCancelButton:true, confirmButtonColor:'#ef4444', confirmButtonText:'Delete' })
+      .then(r=>{ if(r.isConfirmed){
+        const assignments=DB.getAssignments().filter(a=>a.id!==assignmentId); DB.saveAssignments(assignments);
+        const subs=DB.getSubmissions().filter(s=>s.assignmentId!==assignmentId); DB.saveSubmissions(subs);
+        UI.showToast('Deleted','Assignment removed','success'); App.showSection('assignments');
+      }});
+  },
+
+  // ---- CREATE ASSIGNMENT ----
+  openCreateAssignment(){
+    const teacher=App.currentUser;
+    const mySections=teacher.sections||[teacher.section].filter(Boolean);
+    const html=`<div class="modal-overlay" id="createAssignModal">
+      <div class="modal modal-xl">
+        <div class="modal-header"><h3><i class="fas fa-tasks" style="color:var(--primary);margin-right:8px"></i>Create Assignment</h3><div class="modal-close" onclick="UI.closeModal('createAssignModal')"><i class="fas fa-times"></i></div></div>
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="field"><label>Assignment Title *</label><input type="text" id="as_title" placeholder="e.g. Chapter 3 Quiz"></div>
+            <div class="field"><label>Target Section *</label><select id="as_section"><option value="">Select section</option>${mySections.map(s=>`<option value="${s}">Section ${s}</option>`).join('')}</select></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>Description (optional)</label><textarea id="as_desc" placeholder="Instructions or description..."></textarea></div>
+            <div class="field"><label>Deadline (optional)</label><input type="datetime-local" id="as_deadline"></div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin:20px 0 12px">
+            <h4 style="font-size:14px;color:var(--text)"><i class="fas fa-question-circle" style="color:var(--primary);margin-right:8px"></i>Questions</h4>
+            <button class="btn btn-sm btn-primary" onclick="TeacherDash.addQuestion()"><i class="fas fa-plus"></i> Add Question</button>
+          </div>
+          <div id="questionsContainer"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="UI.closeModal('createAssignModal')">Cancel</button>
+          <button class="btn btn-primary" onclick="TeacherDash.saveAssignment()"><i class="fas fa-save"></i> Save Assignment</button>
+        </div>
+      </div>
+    </div>`;
+    const existing=document.getElementById('createAssignModal');
+    if(existing) existing.remove();
+    document.body.insertAdjacentHTML('beforeend',html);
+    UI.openModal('createAssignModal');
+    this._qCount=0;
+    this.addQuestion(); // Add first question by default
+  },
+
+  _qCount:0,
+
+  addQuestion(){
+    const qid=`q_${++this._qCount}`;
+    const container=document.getElementById('questionsContainer');
+    if(!container) return;
+    const letters=['A','B','C','D'];
+    const qHtml=`<div class="question-block" id="qblock_${qid}">
+      <div class="question-block-header">
+        <span>Question ${this._qCount}</span>
+        <button class="btn btn-sm btn-danger btn-icon" onclick="document.getElementById('qblock_${qid}').remove()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="field"><label>Question Text *</label><input type="text" id="${qid}_text" placeholder="Enter your question here..."></div>
+      ${letters.map((l,i)=>`<div class="option-row">
+        <div class="option-letter">${l}</div>
+        <input type="text" class="field" style="flex:1;margin:0;padding:9px 12px;border:1px solid var(--border);border-radius:9px;background:var(--bg);color:var(--text);font-size:13px" id="${qid}_opt${i}" placeholder="Option ${l}...">
+        <input type="radio" class="correct-radio" name="${qid}_correct" value="${i}" id="${qid}_cor${i}">
+        <label class="correct-label" for="${qid}_cor${i}">Correct</label>
+      </div>`).join('')}
+    </div>`;
+    container.insertAdjacentHTML('beforeend', qHtml);
+  },
+
+  saveAssignment(){
+    const title=document.getElementById('as_title')?.value?.trim();
+    const section=document.getElementById('as_section')?.value;
+    const desc=document.getElementById('as_desc')?.value?.trim();
+    const deadline=document.getElementById('as_deadline')?.value;
+    if(!title||!section){ UI.showToast('Missing Fields','Title and section are required','warning'); return; }
+
+    // Collect questions
+    const qBlocks=document.querySelectorAll('.question-block');
+    if(!qBlocks.length){ UI.showToast('No Questions','Please add at least one question','warning'); return; }
+    const questions=[];
+    let valid=true;
+    qBlocks.forEach(block=>{
+      const qid=block.id.replace('qblock_','');
+      const text=document.getElementById(`${qid}_text`)?.value?.trim();
+      const opts=['0','1','2','3'].map(i=>document.getElementById(`${qid}_opt${i}`)?.value?.trim()||'');
+      const correctEl=document.querySelector(`input[name="${qid}_correct"]:checked`);
+      if(!text||opts.some(o=>!o)||!correctEl){ valid=false; return; }
+      questions.push({ id:DB.uid(), text, options:opts, correctAnswer:parseInt(correctEl.value) });
+    });
+    if(!valid){ UI.showToast('Incomplete Questions','Please fill all question texts, options, and mark correct answers','warning'); return; }
+
+    const assignment={ id:DB.uid(), title, description:desc||'', deadline:deadline?new Date(deadline).toISOString():null, section, teacherId:App.currentUser.id, questions, createdAt:new Date().toISOString(), isActive:true };
+    const assignments=DB.getAssignments(); assignments.push(assignment); DB.saveAssignments(assignments);
+
+    // Notify students in section
+    DB.notifySection(section,`New Assignment: ${title}`,`A new assignment has been posted for Section ${section}. Deadline: ${deadline?formatDate(deadline):'No deadline'}.`,'assignment',assignment.id);
+
+    UI.closeModal('createAssignModal');
+    UI.showToast('Assignment Created',`"${title}" has been posted to Section ${section}`,'success');
+    App.showSection('assignments');
+  },
+
+  // ---- PROGRESS ----
+  renderProgress(container){
+    App.setTopbarTitle('Progress & Grades','Track student performance and grade distribution');
+    const assignments=this.getMyAssignments();
+    const students=this.getMyStudents();
+    const subs=DB.getSubmissions().filter(s=>assignments.map(a=>a.id).includes(s.assignmentId));
+
+    // Grade distribution
+    const gradeRanges=[{l:'A (90-100)',min:90,max:100,color:'rgba(34,197,94,0.8)'},{l:'B (80-89)',min:80,max:89,color:'rgba(6,182,212,0.8)'},{l:'C (70-79)',min:70,max:79,color:'rgba(245,158,11,0.8)'},{l:'D (60-69)',min:60,max:69,color:'rgba(239,68,68,0.8)'},{l:'F (<60)',min:0,max:59,color:'rgba(100,116,139,0.8)'}];
+    const gradeCounts=gradeRanges.map(g=>subs.filter(s=>s.score>=g.min&&s.score<=g.max).length);
+
+    container.innerHTML=`
+      <div class="section-panel active">
+        <div class="page-header">
+          <div class="page-header-left"><h1>Progress & Grades</h1><p>Analytics across ${students.length} students</p></div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card" style="--stat-color:#4f46e5;--stat-bg:rgba(79,70,229,0.1)">
+            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-info"><div class="val">${subs.length}</div><div class="lbl">Total Submissions</div></div>
+          </div>
+          <div class="stat-card" style="--stat-color:#22c55e;--stat-bg:rgba(34,197,94,0.1)">
+            <div class="stat-icon"><i class="fas fa-percentage"></i></div>
+            <div class="stat-info"><div class="val">${subs.length?Math.round(subs.reduce((a,b)=>a+b.score,0)/subs.length)+'%':'N/A'}</div><div class="lbl">Class Average</div></div>
+          </div>
+          <div class="stat-card" style="--stat-color:#f59e0b;--stat-bg:rgba(245,158,11,0.1)">
+            <div class="stat-icon"><i class="fas fa-trophy"></i></div>
+            <div class="stat-info"><div class="val">${subs.length?Math.max(...subs.map(s=>s.score))+'%':'N/A'}</div><div class="lbl">Highest Score</div></div>
+          </div>
+          <div class="stat-card" style="--stat-color:#ef4444;--stat-bg:rgba(239,68,68,0.1)">
+            <div class="stat-icon"><i class="fas fa-arrow-down"></i></div>
+            <div class="stat-info"><div class="val">${subs.length?Math.min(...subs.map(s=>s.score))+'%':'N/A'}</div><div class="lbl">Lowest Score</div></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><h3><i class="fas fa-chart-bar" style="color:var(--primary);margin-right:8px"></i>Grade Distribution</h3></div>
+            <div class="card-body"><div class="chart-container-lg"><canvas id="gradeDistChart"></canvas></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3><i class="fas fa-chart-line" style="color:var(--accent);margin-right:8px"></i>Avg Score per Assignment</h3></div>
+            <div class="card-body"><div class="chart-container-lg"><canvas id="assignScoreChart"></canvas></div></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:20px">
+          <div class="card-header"><h3><i class="fas fa-medal" style="color:var(--warning);margin-right:8px"></i>Student Leaderboard</h3></div>
+          <div class="card-body" style="padding:0">
+            <div class="table-wrap"><table>
+              <thead><tr><th>#</th><th>Student</th><th>Section</th><th>Assignments</th><th>Avg Grade</th><th>Status</th></tr></thead>
+              <tbody>
+                ${[...students].map(s=>{ const mySubs=subs.filter(sub=>sub.studentId===s.id); const avg=mySubs.length?Math.round(mySubs.reduce((a,b)=>a+b.score,0)/mySubs.length):null; return {student:s,avg,count:mySubs.length}; }).sort((a,b)=>(b.avg||0)-(a.avg||0)).map((item,idx)=>`<tr>
+                  <td style="font-weight:700;color:${idx<3?'var(--warning)':'var(--text3)'}">
+                    ${idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':`#${idx+1}`}
+                  </td>
+                  <td><div style="display:flex;align-items:center;gap:10px">${UI.renderAvatar(item.student.name,item.student.id,30)}<span style="font-weight:600">${escHtml(item.student.name)}</span></div></td>
+                  <td><span class="badge badge-primary">§${item.student.section}</span></td>
+                  <td>${item.count} submitted</td>
+                  <td>${item.avg!==null?`<span style="font-weight:700;color:${getGradeColor(item.avg)}">${item.avg}% (${getGradeLabel(item.avg)})</span>`:'<span class="badge badge-gray">N/A</span>'}</td>
+                  <td><span class="badge badge-${item.avg>=60?'success':'danger'}">${item.avg!==null?(item.avg>=60?'Passing':'Failing'):'No data'}</span></td>
+                </tr>`).join('')}
+              </tbody>
+            </table></div>
+          </div>
+        </div>
+      </div>`;
+    requestAnimationFrame(()=>{
+      const ctx1=document.getElementById('gradeDistChart');
+      if(ctx1) App.charts['gradeDistChart']=new Chart(ctx1,{
+        type:'bar',
+        data:{labels:gradeRanges.map(g=>g.l),datasets:[{label:'Students',data:gradeCounts,backgroundColor:gradeRanges.map(g=>g.color),borderWidth:0,borderRadius:6}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'rgba(128,128,128,0.1)'},ticks:{stepSize:1}}}}
+      });
+      const ctx2=document.getElementById('assignScoreChart');
+      if(ctx2 && assignments.length){
+        const labels=assignments.slice(-6).map(a=>a.title.slice(0,12)+'...');
+        const data=assignments.slice(-6).map(a=>{ const s=subs.filter(b=>b.assignmentId===a.id); return s.length?Math.round(s.reduce((a,b)=>a+b.score,0)/s.length):0; });
+        App.charts['assignScoreChart']=new Chart(ctx2,{
+          type:'line',
+          data:{labels,datasets:[{label:'Avg Score %',data,backgroundColor:'rgba(79,70,229,0.1)',borderColor:'rgba(79,70,229,1)',borderWidth:2.5,fill:true,tension:0.4,pointBackgroundColor:'rgba(79,70,229,1)',pointRadius:5}]},
+          options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100,grid:{color:'rgba(128,128,128,0.1)'},ticks:{callback:v=>v+'%'}},x:{grid:{display:false}}}}
+        });
+      }
+    });
+  },
+
+  // ---- ANNOUNCEMENTS ----
+  renderAnnouncements(container){
+    App.setTopbarTitle('Announcements','Post announcements to your sections');
+    const teacher=App.currentUser;
+    const mySections=teacher.sections||[teacher.section].filter(Boolean);
+    const anns=DB.getAnnouncements().filter(a=>!a.targetSection||mySections.includes(a.targetSection)).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+    container.innerHTML=`
+      <div class="section-panel active">
+        <div class="page-header">
+          <div class="page-header-left"><h1>Announcements</h1></div>
+          <div class="page-header-right">
+            <button class="btn btn-primary" onclick="TeacherDash.openAnnModal()"><i class="fas fa-plus"></i> Post Announcement</button>
+          </div>
+        </div>
+        <div id="teacherAnnList">
+          ${anns.length?anns.map(a=>AdminDash.renderAnnCard(a)).join(''):`<div class="empty-state"><i class="fas fa-bullhorn"></i><h3>No announcements</h3></div>`}
+        </div>
+      </div>
+      <div class="modal-overlay" id="teacherAnnModal">
+        <div class="modal">
+          <div class="modal-header"><h3>Post Announcement</h3><div class="modal-close" onclick="UI.closeModal('teacherAnnModal')"><i class="fas fa-times"></i></div></div>
+          <div class="modal-body">
+            <div class="field"><label>Title</label><input type="text" id="ta_title" placeholder="Title"></div>
+            <div class="field"><label>Content</label><textarea id="ta_content" rows="4"></textarea></div>
+            <div class="form-row">
+              <div class="field"><label>Target Section</label><select id="ta_section"><option value="">All my sections</option>${mySections.map(s=>`<option value="${s}">Section ${s}</option>`).join('')}</select></div>
+              <div class="field"><label>Type</label><select id="ta_type"><option value="announcement">Announcement</option><option value="reminder">Reminder</option></select></div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="UI.closeModal('teacherAnnModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="TeacherDash.postAnnouncement()"><i class="fas fa-paper-plane"></i> Post</button>
+          </div>
+        </div>
+      </div>`;
+  },
+
+  openAnnModal(){ UI.openModal('teacherAnnModal'); },
+
+  postAnnouncement(){
+    const title=document.getElementById('ta_title')?.value?.trim();
+    const content=document.getElementById('ta_content')?.value?.trim();
+    const targetSection=document.getElementById('ta_section')?.value||null;
+    const type=document.getElementById('ta_type')?.value||'announcement';
+    if(!title||!content){ UI.showToast('Missing Info','Please fill in all fields','warning'); return; }
+    const ann={ id:DB.uid(), title, content, authorId:App.currentUser.id, authorName:App.currentUser.name, authorRole:App.currentUser.role, targetSection, createdAt:new Date().toISOString(), type };
+    const anns=DB.getAnnouncements(); anns.unshift(ann); DB.saveAnnouncements(anns);
+    // Notify students
+    const teacher=App.currentUser; const mySec=teacher.sections||[teacher.section].filter(Boolean);
+    const targetSecs=targetSection?[targetSection]:mySec;
+    targetSecs.forEach(s=>DB.notifySection(s,title,'New '+type+' from '+App.currentUser.name+': '+content.slice(0,60)+'...',type,ann.id));
+    UI.closeModal('teacherAnnModal');
+    UI.showToast('Posted','Announcement has been posted','success');
+    App.showSection('announcements');
+  }
+};
+
+/* ============================================================
+   STUDENT DASHBOARD
+   ============================================================ */
+const StudentDash = {
+  render(section, container){
+    const panels = {
+      'overview': ()=>this.renderOverview(container),
+      'assignments': ()=>this.renderAssignments(container),
+      'grades': ()=>this.renderGrades(container),
+      'announcements': ()=>this.renderAnnouncements(container),
+      'notifications': ()=>renderNotificationsPanel(container),
+      'profile': ()=>renderProfilePanel(container),
+    };
+    (panels[section]||panels['overview'])();
+  },
+
+  getMyAssignments(){
+    const student=App.currentUser;
+    return DB.getAssignments().filter(a=>a.section===student.section&&a.isActive);
+  },
+
+  renderOverview(container){
+    App.setTopbarTitle('My Dashboard','Welcome back, '+App.currentUser.name.split(' ')[0]);
+    const student=App.currentUser;
+    const assignments=this.getMyAssignments();
+    const subs=DB.getSubmissions().filter(s=>s.studentId===student.id);
+    const pending=assignments.filter(a=>!subs.find(s=>s.assignmentId===a.id));
+    const upcoming=pending.filter(a=>a.deadline&&!isOverdue(a.deadline));
+    const unread=DB.getNotifForUser(student.id).filter(n=>!n.read).length;
+
+    container.innerHTML=`
+      <div class="section-panel active">
+        <div class="page-header">
+          <div class="page-header-left"><h1>Student Dashboard</h1><p>Section ${student.section||'N/A'}</p></div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card" style="--stat-color:#4f46e5;--stat-bg:rgba(79,70,229,0.1)">
+            <div class="stat-icon"><i class="fas fa-tasks"></i></div>
+            <div class="stat-info"><div class="val">${assignments.length}</div><div class="lbl">Total Assignments</div><div class="sub">In my section</div></div>
+          </div>
+          <div class="stat-card" style="--stat-color:#ef4444;--stat-bg:rgba(239,68,68,0.1)">
+            <div class="stat-icon"><i class="fas fa-hourglass-half"></i></div>
+            <div class="stat-info"><div class="val">${pending.length}</div><div class="lbl">Pending</div><div class="sub">Not submitted</div></div>
+          </div>
+          <div class="stat-card" style="--stat-color:#22c55e;--stat-bg:rgba(34,197,94,0.1)">
+            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-info"><div class="val">${subs.length}</div><div class="lbl">Submitted</div><div class="sub">Completed</div></div>
+          </div>
+          <div class="stat-card" style="--stat-color:#f59e0b;--stat-bg:rgba(245,158,11,0.1)">
+            <div class="stat-icon"><i class="fas fa-star"></i></div>
+            <div class="stat-info"><div class="val">${subs.length?Math.round(subs.reduce((a,b)=>a+b.score,0)/subs.length)+'%':'N/A'}</div><div class="lbl">My Average</div><div class="sub">${subs.length?getGradeLabel(Math.round(subs.reduce((a,b)=>a+b.score,0)/subs.length)):''}</div></div>
+          </div>
+        </div>
+        ${unread>0?`<div style="background:linear-gradient(135deg,rgba(79,70,229,0.1),rgba(6,182,212,0.08));border:1px solid rgba(79,70,229,0.2);border-radius:var(--radius);padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="App.showSection('notifications')">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;color:white;font-size:14px;flex-shrink:0"><i class="fas fa-bell"></i></div>
+          <div><div style="font-size:14px;font-weight:600;color:var(--text)">You have ${unread} unread notification${unread>1?'s':''}</div><div style="font-size:12px;color:var(--text3)">Click to view your notifications</div></div>
+          <i class="fas fa-chevron-right" style="margin-left:auto;color:var(--text3)"></i>
+        </div>`:''}
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><h3><i class="fas fa-clock" style="color:var(--danger);margin-right:8px"></i>Upcoming Deadlines</h3><button class="btn btn-sm btn-secondary" onclick="App.showSection('assignments')">View All</button></div>
+            <div class="card-body" style="padding:0">
+              ${upcoming.length?upcoming.slice(0,4).map(a=>{ const soon=isDeadlineSoon(a.deadline); return `<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
+                <div style="width:40px;height:40px;border-radius:10px;background:${soon?'rgba(239,68,68,0.1)':'rgba(245,158,11,0.1)'};display:flex;align-items:center;justify-content:center;color:${soon?'var(--danger)':'var(--warning)'};flex-shrink:0"><i class="fas fa-tasks"></i></div>
+                <div style="flex:1"><div style="font-weight:600;font-size:13.5px">${escHtml(a.title)}</div><div style="font-size:11.5px;color:${soon?'var(--danger)':'var(--warning)'}">${formatDate(a.deadline)}</div></div>
+                <button class="btn btn-sm btn-primary" onclick="StudentDash.openTakeAssignment('${a.id}')">Start</button>
+              </div>`;}).join('')
+              :`<div class="empty-state" style="padding:30px 20px"><i class="fas fa-check-circle" style="color:var(--success)"></i><h3>All caught up!</h3><p>No upcoming deadlines</p></div>`}
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3><i class="fas fa-chart-line" style="color:var(--primary);margin-right:8px"></i>My Grade History</h3></div>
+            <div class="card-body"><div class="chart-container"><canvas id="studentGradeChart"></canvas></div></div>
+          </div>
+        </div>
+      </div>`;
+    requestAnimationFrame(()=>{
+      const ctx=document.getElementById('studentGradeChart');
+      if(ctx && subs.length){
+        const sorted=[...subs].sort((a,b)=>new Date(a.submittedAt)-new Date(b.submittedAt));
+        const labels=sorted.map(s=>{ const a=DB.getAssignmentById(s.assignmentId); return a?a.title.slice(0,10)+'..':''; });
+        const data=sorted.map(s=>s.score);
+        App.charts['studentGradeChart']=new Chart(ctx,{
+          type:'line',
+          data:{labels,datasets:[{label:'Score %',data,backgroundColor:'rgba(79,70,229,0.1)',borderColor:'rgba(79,70,229,1)',borderWidth:2.5,fill:true,tension:0.4,pointBackgroundColor:data.map(d=>getGradeColor(d)),pointRadius:5}]},
+          options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100,grid:{color:'rgba(128,128,128,0.1)'},ticks:{callback:v=>v+'%'}},x:{grid:{display:false}}}}
+        });
+      } else if(ctx){
+        const parent=ctx.parentElement; parent.innerHTML=`<div class="empty-state" style="height:100%"><i class="fas fa-chart-line"></i><p>No grade data yet</p></div>`;
+      }
+    });
+  },
+
+  renderAssignments(container){
+    App.setTopbarTitle('My Assignments','View and complete your assignments');
+    const student=App.currentUser;
+    const assignments=this.getMyAssignments();
+    const subs=DB.getSubmissions().filter(s=>s.studentId===student.id);
+
+    container.innerHTML=`
+      <div class="section-panel active">
+        <div class="page-header">
+          <div class="page-header-left"><h1>My Assignments</h1><p>Section ${student.section} — ${assignments.length} total</p></div>
+        </div>
+        <div class="filter-bar">
+          <button class="btn btn-secondary filter-tab active" data-tab="all" onclick="StudentDash.filterTab(this,'all')">All</button>
+          <button class="btn btn-secondary filter-tab" data-tab="pending" onclick="StudentDash.filterTab(this,'pending')">Pending</button>
+          <button class="btn btn-secondary filter-tab" data-tab="submitted" onclick="StudentDash.filterTab(this,'submitted')">Submitted</button>
+        </div>
+        <div id="assignmentsList">
+          ${this.buildAssignmentsList(assignments, subs, 'all')}
+        </div>
+      </div>`;
+  },
+
+  filterTab(el, tab){
+    document.querySelectorAll('.filter-tab').forEach(b=>b.classList.remove('active'));
+    el.classList.add('active');
+    const student=App.currentUser;
+    const assignments=this.getMyAssignments();
+    const subs=DB.getSubmissions().filter(s=>s.studentId===student.id);
+    document.getElementById('assignmentsList').innerHTML=this.buildAssignmentsList(assignments, subs, tab);
+  },
+
+  buildAssignmentsList(assignments, subs, tab){
+    let filtered=assignments;
+    if(tab==='pending') filtered=assignments.filter(a=>!subs.find(s=>s.assignmentId===a.id));
+    if(tab==='submitted') filtered=assignments.filter(a=>!!subs.find(s=>s.assignmentId===a.id));
+    if(!filtered.length) return `<div class="empty-state"><i class="fas fa-tasks"></i><h3>No assignments here</h3></div>`;
+    return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
+      ${filtered.map(a=>{
+        const sub=subs.find(s=>s.assignmentId===a.id);
+        const over=isOverdue(a.deadline); const soon=isDeadlineSoon(a.deadline);
+        const acColor=sub?'var(--success)':over?'var(--danger)':soon?'var(--warning)':'var(--primary)';
+        return `<div class="assignment-card" style="--ac:${acColor};cursor:default">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+            <div class="assignment-card-title">${escHtml(a.title)}</div>
+            <span class="badge badge-${sub?'success':over?'danger':soon?'warning':'gray'}">${sub?'Submitted':over?'Overdue':soon?'Due Soon':'Pending'}</span>
+          </div>
+          <div class="assignment-card-meta">
+            <span><i class="fas fa-question-circle"></i> ${a.questions.length} questions</span>
+            <span style="color:${over&&!sub?'var(--danger)':soon&&!sub?'var(--warning)':'var(--text3)'}"><i class="fas fa-clock"></i> ${a.deadline?formatDate(a.deadline):'No deadline'}</span>
+          </div>
+          ${a.description?`<div class="assignment-card-desc">${escHtml(a.description)}</div>`:''}
+          ${sub?`<div style="margin-top:12px;padding:10px 14px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:9px;display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:13px;color:var(--text2)">Your Score:</span>
+            <span style="font-size:18px;font-weight:700;color:${getGradeColor(sub.score)}">${sub.score}% <span style="font-size:13px">(${getGradeLabel(sub.score)})</span></span>
+          </div>
+          <button class="btn btn-secondary" style="width:100%;margin-top:10px" onclick="StudentDash.reviewAssignment('${a.id}')"><i class="fas fa-eye"></i> Review Answers</button>`
+          :!over?`<button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="StudentDash.openTakeAssignment('${a.id}')"><i class="fas fa-pencil-alt"></i> Start Assignment</button>`
+          :`<button class="btn" style="width:100%;margin-top:12px;background:var(--bg);color:var(--text3);cursor:not-allowed" disabled><i class="fas fa-lock"></i> Deadline Passed</button>`}
+        </div>`;
+      }).join('')}
+    </div>`;
+  },
+
+  openTakeAssignment(assignmentId){
+    const assignment=DB.getAssignmentById(assignmentId);
+    if(!assignment){ UI.showToast('Error','Assignment not found','danger'); return; }
+    const existing=DB.getSubmissionByStudentAndAssignment(App.currentUser.id, assignmentId);
+    if(existing){ UI.showToast('Already Submitted','You have already submitted this assignment','info'); return; }
+    // Build modal
+    const html=`<div class="modal-overlay" id="takeAssignModal">
+      <div class="modal modal-xl">
+        <div class="modal-header">
+          <div>
+            <h3>${escHtml(assignment.title)}</h3>
+            <span style="font-size:12px;color:var(--text3)">${assignment.questions.length} questions · ${assignment.deadline?'Due: '+formatDate(assignment.deadline):'No deadline'}</span>
+          </div>
+          <div class="modal-close" onclick="StudentDash.confirmClose()"><i class="fas fa-times"></i></div>
+        </div>
+        <div class="modal-body">
+          ${assignment.description?`<div style="background:rgba(79,70,229,0.06);border:1px solid rgba(79,70,229,0.15);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:var(--text2)">${escHtml(assignment.description)}</div>`:''}
+          ${assignment.questions.map((q,qi)=>`<div style="margin-bottom:24px" id="q_container_${qi}">
+            <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:12px"><span style="color:var(--primary)">Q${qi+1}.</span> ${escHtml(q.text)}</div>
+            ${q.options.map((opt,oi)=>`<div class="mcq-option" id="opt_${qi}_${oi}" onclick="StudentDash.selectOption(${qi},${oi})">
+              <div class="mcq-letter">${['A','B','C','D'][oi]}</div>
+              <div class="mcq-text">${escHtml(opt)}</div>
+            </div>`).join('')}
+          </div>`).join('')}
+        </div>
+        <div class="modal-footer" style="justify-content:space-between">
+          <span style="font-size:12px;color:var(--text3)" id="answeredCount">0/${assignment.questions.length} answered</span>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-secondary" onclick="StudentDash.confirmClose()">Cancel</button>
+            <button class="btn btn-primary" onclick="StudentDash.submitAssignment('${assignmentId}')"><i class="fas fa-paper-plane"></i> Submit</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+    const existing2=document.getElementById('takeAssignModal');
+    if(existing2) existing2.remove();
+    document.body.insertAdjacentHTML('beforeend',html);
+    window._answers={};
+    window._totalQ=assignment.questions.length;
+    UI.openModal('takeAssignModal');
+  },
+
+  selectOption(qi, oi){
+    // Deselect all options for this question
+    for(let i=0;i<4;i++){
+      const el=document.getElementById(`opt_${qi}_${i}`);
+      if(el){ el.classList.remove('selected'); el.querySelector('.mcq-letter').style.background=''; el.querySelector('.mcq-letter').style.borderColor=''; el.querySelector('.mcq-letter').style.color=''; }
+    }
+    // Select clicked
+    const el=document.getElementById(`opt_${qi}_${oi}`);
+    if(el) el.classList.add('selected');
+    window._answers[qi]=oi;
+    const count=Object.keys(window._answers||{}).length;
+    const el2=document.getElementById('answeredCount');
+    if(el2) el2.textContent=count+'/'+(window._totalQ||0)+' answered';
+  },
+
+  confirmClose(){
+    Swal.fire({title:'Exit Assignment?',text:'Your answers will not be saved.',icon:'warning',showCancelButton:true,confirmButtonText:'Yes, exit',confirmButtonColor:'#ef4444'})
+      .then(r=>{ if(r.isConfirmed){ UI.closeModal('takeAssignModal'); document.getElementById('takeAssignModal')?.remove(); } });
+  },
+
+  submitAssignment(assignmentId){
+    const assignment=DB.getAssignmentById(assignmentId);
+    if(!assignment) return;
+    const answers=window._answers||{};
+    if(Object.keys(answers).length<assignment.questions.length){
+      Swal.fire({title:'Incomplete!',text:`You've answered ${Object.keys(answers).length}/${assignment.questions.length} questions. Submit anyway?`,icon:'warning',showCancelButton:true,confirmButtonText:'Submit Anyway',confirmButtonColor:'#4f46e5'})
+        .then(r=>{ if(r.isConfirmed) this._doSubmit(assignment, answers); });
+    } else { this._doSubmit(assignment, answers); }
+  },
+
+  _doSubmit(assignment, answers){
+    let correct=0;
+    assignment.questions.forEach((q,i)=>{ if(answers[i]===q.correctAnswer) correct++; });
+    const score=Math.round((correct/assignment.questions.length)*100);
+    const submission={ id:DB.uid(), assignmentId:assignment.id, studentId:App.currentUser.id, answers:Object.values(answers), score, submittedAt:new Date().toISOString() };
+    const subs=DB.getSubmissions(); subs.push(submission); DB.saveSubmissions(subs);
+    DB.addNotification(App.currentUser.id,'Assignment Submitted',`You scored ${score}% on "${assignment.title}"`,'grade',assignment.id);
+    UI.closeModal('takeAssignModal');
+    document.getElementById('takeAssignModal')?.remove();
+    // Show result
+    Swal.fire({
+      title:'Assignment Submitted!',
+      html:`<div class="score-display">
+        <div class="score-circle" style="--pct:${score}"><div class="score-inner"><div class="pct">${score}%</div><div class="lbl">${getGradeLabel(score)}</div></div></div>
+        <h3 style="color:${getGradeColor(score)};margin-bottom:8px">${score>=90?'Excellent! 🎉':score>=75?'Great Job! 👍':score>=60?'Good Effort! 💪':'Keep Studying! 📚'}</h3>
+        <p style="color:#64748b;font-size:14px">${correct} correct out of ${assignment.questions.length} questions</p>
+      </div>`,
+      confirmButtonText:'View Results', confirmButtonColor:'#4f46e5'
+    }).then(()=>{ App.showSection('assignments'); });
+  },
+
+  reviewAssignment(assignmentId){
+    const assignment=DB.getAssignmentById(assignmentId);
+    if(!assignment) return;
+    const sub=DB.getSubmissionByStudentAndAssignment(App.currentUser.id, assignmentId);
+    if(!sub){ UI.showToast('Error','Submission not found','danger'); return; }
+    const html=`<div class="modal-overlay" id="reviewModal">
+      <div class="modal modal-xl">
+        <div class="modal-header">
+          <div><h3>${escHtml(assignment.title)} — Review</h3><span style="font-size:13px;font-weight:700;color:${getGradeColor(sub.score)}">Score: ${sub.score}% (${getGradeLabel(sub.score)})</span></div>
+          <div class="modal-close" onclick="UI.closeModal('reviewModal');document.getElementById('reviewModal').remove()"><i class="fas fa-times"></i></div>
+        </div>
+        <div class="modal-body">
+          ${assignment.questions.map((q,qi)=>{
+            const studentAns=sub.answers[qi];
+            const isCorrect=studentAns===q.correctAnswer;
+            return `<div style="margin-bottom:24px">
+              <div style="font-weight:700;font-size:15px;margin-bottom:4px"><span style="color:var(--primary)">Q${qi+1}.</span> ${escHtml(q.text)}</div>
+              <div style="font-size:12px;margin-bottom:10px;color:${isCorrect?'var(--success)':'var(--danger)'}"><i class="fas fa-${isCorrect?'check':'times'}-circle"></i> ${isCorrect?'Correct!':'Incorrect'}</div>
+              ${q.options.map((opt,oi)=>{
+                let cls=''; if(oi===q.correctAnswer) cls='correct'; else if(oi===studentAns&&!isCorrect) cls='wrong';
+                return `<div class="mcq-option ${cls}" style="cursor:default;margin-bottom:8px">
+                  <div class="mcq-letter">${['A','B','C','D'][oi]}</div>
+                  <div class="mcq-text">${escHtml(opt)}${oi===q.correctAnswer?' <span style="font-size:11px;color:var(--success);font-weight:600">(Correct Answer)</span>':oi===studentAns&&!isCorrect?' <span style="font-size:11px;color:var(--danger);font-weight:600">(Your Answer)</span>':''}</div>
+                </div>`;
+              }).join('')}
+            </div>`;
+          }).join('')}
+        </div>
+        <div class="modal-footer"><button class="btn btn-primary" onclick="UI.closeModal('reviewModal');document.getElementById('reviewModal').remove()">Close</button></div>
+      </div>
+    </div>`;
+    const existing=document.getElementById('reviewModal');
+    if(existing) existing.remove();
+    document.body.insertAdjacentHTML('beforeend',html);
+    UI.openModal('reviewModal');
+  },
+
+  renderGrades(container){
+    App.setTopbarTitle('My Grades','View all your grades and performance');
+    const student=App.currentUser;
+    const assignments=this.getMyAssignments();
+    const subs=DB.getSubmissions().filter(s=>s.studentId===student.id);
+    const avg=subs.length?Math.round(subs.reduce((a,b)=>a+b.score,0)/subs.length):null;
+    container.innerHTML=`
+      <div class="section-panel active">
+        <div class="page-header">
+          <div class="page-header-left"><h1>My Grades</h1><p>Section ${student.section}</p></div>
+          ${avg!==null?`<div class="stat-card" style="--stat-color:${getGradeColor(avg)};--stat-bg:${getGradeColor(avg).replace(')',',0.1)')};padding:12px 20px;box-shadow:none">
+            <div class="stat-icon" style="width:40px;height:40px"><i class="fas fa-star"></i></div>
+            <div class="stat-info"><div class="val" style="font-size:22px">${avg}%</div><div class="lbl">Overall Average (${getGradeLabel(avg)})</div></div>
+          </div>`:''}
+        </div>
+        <div class="grid-2" ź="margin-bottom:20px">
+          <div class="card">
+            <div class="card-header"><h3><i class="fas fa-chart-bar" style="color:var(--primary);margin-right:8px"></i>My Scores</h3></div>
+            <div class="card-body"><div class="chart-container-lg"><canvas id="myScoresChart"></canvas></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3><i class="fas fa-chart-pie" style="color:var(--accent);margin-right:8px"></i>Grade Distribution</h3></div>
+            <div class="card-body"><div class="chart-container-lg"><canvas id="myGradeDistChart"></canvas></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3><i class="fas fa-list" style="color:var(--warning);margin-right:8px"></i>All Assignments</h3></div>
+          <div class="card-body" style="padding:0">
+            <div class="table-wrap"><table>
+              <thead><tr><th>Assignment</th><th>Section</th><th>Questions</th><th>Score</th><th>Grade</th><th>Submitted</th><th>Actions</th></tr></thead>
+              <tbody>
+                ${assignments.map(a=>{ const sub=subs.find(s=>s.assignmentId===a.id); return `<tr>
+                  <td style="font-weight:600">${escHtml(a.title)}</td>
+                  <td><span class="badge badge-primary">§${a.section}</span></td>
+                  <td>${a.questions.length} Q</td>
+                  <td>${sub?`<span style="font-weight:700;color:${getGradeColor(sub.score)}">${sub.score}%</span>`:'<span class="badge badge-gray">Not submitted</span>'}</td>
+                  <td>${sub?`<span class="badge" style="background:${getGradeColor(sub.score).replace(')',',0.15)')};color:${getGradeColor(sub.score)}">${getGradeLabel(sub.score)}</span>`:'—'}</td>
+                  <td style="font-size:12px;color:var(--text3)">${sub?formatDateTime(sub.submittedAt):'—'}</td>
+                  <td>${sub?`<button class="btn btn-sm btn-secondary" onclick="StudentDash.reviewAssignment('${a.id}')"><i class="fas fa-eye"></i> Review</button>`
+                    :!isOverdue(a.deadline)?`<button class="btn btn-sm btn-primary" onclick="StudentDash.openTakeAssignment('${a.id}')"><i class="fas fa-pencil-alt"></i> Start</button>`
+                    :'<span style="font-size:12px;color:var(--text3)">Expired</span>'}</td>
+                </tr>`; }).join('')}
+              </tbody>
+            </table></div>
+          </div>
+        </div>
+      </div>`;
+    requestAnimationFrame(()=>{
+      const submittedAssigns=[...assignments].filter(a=>subs.find(s=>s.assignmentId===a.id));
+      const ctx1=document.getElementById('myScoresChart');
+      if(ctx1&&submittedAssigns.length){
+        const labels=submittedAssigns.map(a=>a.title.slice(0,12)+'...');
+        const data=submittedAssigns.map(a=>{ const s=subs.find(b=>b.assignmentId===a.id); return s?s.score:0; });
+        App.charts['myScoresChart']=new Chart(ctx1,{
+          type:'bar',
+          data:{labels,datasets:[{label:'Score %',data,backgroundColor:data.map(d=>`${getGradeColor(d).replace(')',',0.7)')}`),borderRadius:6,borderWidth:0}]},
+          options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100,grid:{color:'rgba(128,128,128,0.1)'},ticks:{callback:v=>v+'%'}},x:{grid:{display:false}}}}
+        });
+      }
+      const ctx2=document.getElementById('myGradeDistChart');
+      if(ctx2){
+        const grades=['A','B','C','D','F'];
+        const counts=[
+          subs.filter(s=>s.score>=90).length,
+          subs.filter(s=>s.score>=80&&s.score<90).length,
+          subs.filter(s=>s.score>=70&&s.score<80).length,
+          subs.filter(s=>s.score>=60&&s.score<70).length,
+          subs.filter(s=>s.score<60).length,
+        ];
+        App.charts['myGradeDistChart']=new Chart(ctx2,{
+          type:'doughnut',
+          data:{labels:grades,datasets:[{data:counts,backgroundColor:['rgba(34,197,94,0.8)','rgba(6,182,212,0.8)','rgba(245,158,11,0.8)','rgba(239,68,68,0.8)','rgba(100,116,139,0.8)'],borderWidth:0,hoverOffset:6}]},
+          options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{padding:12,font:{size:12}}}}}
+        });
+      }
+    });
+  },
+
+  renderAnnouncements(container){
+    App.setTopbarTitle('Announcements','View announcements from your school and teachers');
+    const student=App.currentUser;
+    const anns=DB.getAnnouncements().filter(a=>!a.targetSection||a.targetSection===student.section).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+    container.innerHTML=`
+      <div class="section-panel active">
+        <div class="page-header"><div class="page-header-left"><h1>Announcements</h1><p>School and section announcements</p></div></div>
+        ${anns.length?anns.map(a=>AdminDash.renderAnnCard(a)).join(''):`<div class="empty-state"><i class="fas fa-bullhorn"></i><h3>No announcements</h3></div>`}
+      </div>`;
+  }
+};
+
+/* ============================================================
+   SHARED PANELS
+   ============================================================ */
+function renderNotificationsPanel(container){
+  App.setTopbarTitle('Notifications','Your notifications and reminders');
+  const user=App.currentUser;
+  const notifs=DB.getNotifForUser(user.id).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  // Mark all read
+  const allNotifs=DB.getNotifications();
+  allNotifs.filter(n=>n.userId===user.id).forEach(n=>n.read=true);
+  DB.saveNotifications(allNotifs);
+  UI.updateNotifBadge();
+
+  const typeIcon={assignment:'fa-tasks',grade:'fa-star',announcement:'fa-bullhorn',reminder:'fa-bell',info:'fa-info-circle'};
+  const typeColor={assignment:'var(--primary)',grade:'var(--warning)',announcement:'var(--accent)',reminder:'var(--success)',info:'var(--primary)'};
+
+  container.innerHTML=`
+    <div class="section-panel active">
+      <div class="page-header">
+        <div class="page-header-left"><h1>Notifications</h1><p>${notifs.length} total · ${notifs.filter(n=>!n.read).length} unread</p></div>
+        ${notifs.length?`<button class="btn btn-secondary" onclick="clearNotifications()"><i class="fas fa-trash"></i> Clear All</button>`:''}
+      </div>
+      <div class="card">
+        ${notifs.length?notifs.map(n=>`<div class="notif-item">
+          <div class="notif-icon" style="background:${(typeColor[n.type]||typeColor.info).replace(')',',0.12)')};color:${typeColor[n.type]||typeColor.info}">
+            <i class="fas ${typeIcon[n.type]||typeIcon.info}"></i>
+          </div>
+          <div class="notif-content">
+            <div class="title">${escHtml(n.title)}</div>
+            <div class="msg">${escHtml(n.message)}</div>
+            <div class="time">${timeAgo(n.createdAt)}</div>
+          </div>
+        </div>`).join(''):`<div class="empty-state"><i class="fas fa-bell-slash"></i><h3>No notifications</h3><p>You're all caught up!</p></div>`}
+      </div>
+    </div>`;
+}
+
+function clearNotifications(){
+  const notifs=DB.getNotifications().filter(n=>n.userId!==App.currentUser.id);
+  DB.saveNotifications(notifs); UI.updateNotifBadge();
+  App.showSection('notifications');
+}
+
+function renderProfilePanel(container){
+  App.setTopbarTitle('My Profile','View and edit your profile information');
+  const user=App.currentUser;
+  container.innerHTML=`
+    <div class="section-panel active">
+      <div style="max-width:700px;margin:0 auto">
+        <div class="profile-card">
+          <div class="profile-banner"></div>
+          <div class="profile-avatar-wrap">
+            <div class="profile-avatar ${getAvatarColor(user.id)}">${getInitials(user.name)}</div>
+          </div>
+          <div class="profile-info">
+            <h2>${escHtml(user.name)}</h2>
+            <span class="role-badge ${user.role}" style="font-size:12px;padding:4px 10px">${user.role}</span>
+            <div class="profile-info-grid">
+              <div class="profile-field"><label>Username</label><span>@${escHtml(user.username)}</span></div>
+              <div class="profile-field"><label>Email</label><span>${escHtml(user.email||'—')}</span></div>
+              <div class="profile-field"><label>Phone</label><span>${escHtml(user.phone||'—')}</span></div>
+              <div class="profile-field"><label>Section</label><span>${user.section||'—'}</span></div>
+              ${user.role==='teacher'?`<div class="profile-field"><label>My Sections</label><span>${(user.sections||[]).join(', ')||'—'}</span></div>`:''}
+              <div class="profile-field"><label>Member Since</label><span>${formatDate(user.createdAt)}</span></div>
+            </div>
+            <button class="btn btn-primary" style="margin-top:20px" onclick="openEditProfile()"><i class="fas fa-edit"></i> Edit Profile</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-overlay" id="editProfileModal">
+      <div class="modal">
+        <div class="modal-header"><h3>Edit Profile</h3><div class="modal-close" onclick="UI.closeModal('editProfileModal')"><i class="fas fa-times"></i></div></div>
+        <div class="modal-body">
+          <div class="field"><label>Full Name</label><input type="text" id="ep_name" value="${escHtml(user.name)}"></div>
+          <div class="field"><label>Email</label><input type="email" id="ep_email" value="${escHtml(user.email||'')}"></div>
+          <div class="field"><label>Phone</label><input type="text" id="ep_phone" value="${escHtml(user.phone||'')}"></div>
+          <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+          <div class="field"><label>New Password (leave blank to keep current)</label><input type="password" id="ep_pw" placeholder="New password"></div>
+          <div class="field"><label>Confirm New Password</label><input type="password" id="ep_pw2" placeholder="Confirm password"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="UI.closeModal('editProfileModal')">Cancel</button>
+          <button class="btn btn-primary" onclick="saveProfile()"><i class="fas fa-save"></i> Save</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function openEditProfile(){ UI.openModal('editProfileModal'); }
+
+function saveProfile(){
+  const name=document.getElementById('ep_name')?.value?.trim();
+  const email=document.getElementById('ep_email')?.value?.trim();
+  const phone=document.getElementById('ep_phone')?.value?.trim();
+  const pw=document.getElementById('ep_pw')?.value;
+  const pw2=document.getElementById('ep_pw2')?.value;
+  if(!name){ UI.showToast('Error','Name is required','warning'); return; }
+  if(pw && pw!==pw2){ UI.showToast('Error','Passwords do not match','danger'); return; }
+  if(pw && pw.length<6){ UI.showToast('Error','Password must be at least 6 characters','warning'); return; }
+  const users=DB.getUsers(); const idx=users.findIndex(u=>u.id===App.currentUser.id);
+  if(idx===-1) return;
+  users[idx].name=name; users[idx].email=email||''; users[idx].phone=phone||'';
+  if(pw) users[idx].password=pw;
+  DB.saveUsers(users); App.currentUser=users[idx]; DB.setCurrentUser(users[idx]);
+  App.renderSidebar(users[idx]); App.renderTopbar(users[idx]);
+  UI.closeModal('editProfileModal');
+  UI.showToast('Saved','Profile updated successfully','success');
+  App.showSection('profile');
+}
+
+/* ============================================================
+   GLOBAL SEARCH
+   ============================================================ */
+function handleGlobalSearch(q){
+  if(!q.trim() || App.currentUser.role!=='admin') return;
+  AdminDash.accountsFilter.search=q;
+  if(App.currentSection!=='accounts') App.showSection('accounts');
+  else AdminDash.filterAccounts();
+}
+
+/* ============================================================
+   AUTH HANDLERS
+   ============================================================ */
+function handleLogin(){
+  const username=document.getElementById('loginUsername').value.trim();
+  const password=document.getElementById('loginPassword').value;
+  const errEl=document.getElementById('loginError');
+  if(!username||!password){ errEl.style.display='block'; errEl.innerHTML='<i class="fas fa-exclamation-circle"></i> Please enter username and password'; return; }
+  const user=Auth.login(username,password);
+  if(!user){ errEl.style.display='block'; errEl.innerHTML='<i class="fas fa-exclamation-circle"></i> Invalid username or password'; gsap.fromTo('#loginCard',{x:-8},{x:8,duration:0.07,repeat:5,yoyo:true,ease:'none',onComplete:()=>gsap.set('#loginCard',{x:0})}); return; }
+  errEl.style.display='none';
+  App.currentUser=user;
+  gsap.to('#loginCard',{opacity:0,y:-20,duration:0.3,onComplete:()=>App.showDashboard(user)});
+}
+
+function handleLogout(){
+  Swal.fire({title:'Sign Out?',text:'You will be logged out of EduCore.',icon:'question',showCancelButton:true,confirmButtonText:'Sign Out',confirmButtonColor:'#4f46e5'})
+    .then(r=>{ if(r.isConfirmed){ Auth.logout(); App.destroyCharts(); gsap.to('#dashboard-screen',{opacity:0,duration:0.3,onComplete:()=>{ document.getElementById('dashboard-screen').style.display='none'; document.getElementById('loginUsername').value=''; document.getElementById('loginPassword').value=''; App.showLogin(); }}); }});
+}
+
+/* ============================================================
+   MISC
+   ============================================================ */
+function togglePw(){
+  const input=document.getElementById('loginPassword');
+  const icon=document.getElementById('pwToggle');
+  if(input.type==='password'){ input.type='text'; icon.className='fas fa-eye-slash form-input-toggle'; }
+  else { input.type='password'; icon.className='fas fa-eye form-input-toggle'; }
+}
+
+function toggleTheme(){
+  const el=document.documentElement; const toggle=document.getElementById('themeToggle');
+  const isDark=el.getAttribute('data-theme')==='dark';
+  el.setAttribute('data-theme',isDark?'light':'dark');
+  localStorage.setItem('ec_dark',isDark?'0':'1');
+  if(toggle) toggle.classList.toggle('on',!isDark);
+  // Re-render charts if any
+  if(App.currentUser) App.showSection(App.currentSection||'overview');
+}
+
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar');
+  const ov=document.getElementById('sidebarOverlay');
+  sb.classList.toggle('open');
+  if(sb.classList.contains('open')){ ov.style.display='block'; gsap.fromTo(ov,{opacity:0},{opacity:1,duration:0.2}); }
+  else { gsap.to(ov,{opacity:0,duration:0.2,onComplete:()=>ov.style.display='none'}); }
+}
+
+function closeSidebar(){
+  const sb=document.getElementById('sidebar');
+  const ov=document.getElementById('sidebarOverlay');
+  sb.classList.remove('open');
+  gsap.to(ov,{opacity:0,duration:0.2,onComplete:()=>ov.style.display='none'});
+}
+
+// Keyboard support
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none') handleLogin();
+  if(e.key==='Escape'){ document.querySelectorAll('.modal-overlay.open').forEach(m=>{ m.classList.remove('open'); }); closeSidebar(); }
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+document.addEventListener('DOMContentLoaded',()=>App.init());
+</script>
+</body>
+</html>

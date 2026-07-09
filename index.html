@@ -1,0 +1,2256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CipherGen — Secure Password Generator</title>
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root {
+  --bg-deep:     #080d1a;
+  --bg-card:     #0e1628;
+  --bg-surface:  #141f38;
+  --bg-hover:    #1c2d50;
+  --border:      #1e3058;
+  --border-glow: #00d4ff44;
+  --cyan:        #00d4ff;
+  --cyan-dim:    #007fa0;
+  --cyan-glow:   #00d4ff33;
+  --green:       #39ff14;
+  --green-dim:   #228b00;
+  --amber:       #ffb347;
+  --red:         #ff3366;
+  --purple:      #9b59b6;
+  --text-primary:   #e8f4fc;
+  --text-secondary: #7fa8c7;
+  --text-muted:     #3d6080;
+  --radius:      10px;
+  --radius-lg:   16px;
+  --transition:  0.2s ease;
+  --font-mono:   'Courier New', 'Lucida Console', monospace;
+  --font-ui:     -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-ui);
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb { background: var(--cyan-dim); border-radius: 3px; }
+
+/* ============================================================
+   CANVAS (matrix rain)
+   ============================================================ */
+#matrixCanvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+#app {
+  position: relative;
+  z-index: 1;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 12px 60px;
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.header {
+  text-align: center;
+  padding: 28px 0 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.logo-icon {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--cyan), var(--purple));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 0 20px var(--cyan-glow);
+}
+
+.header h1 {
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  background: linear-gradient(90deg, var(--cyan), #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-sub {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* ============================================================
+   NAV TABS
+   ============================================================ */
+.nav-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 0 0 2px;
+  margin-bottom: 20px;
+  scrollbar-width: none;
+}
+.nav-tabs::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-family: var(--font-ui);
+  white-space: nowrap;
+  transition: all var(--transition);
+  display: flex; align-items: center; gap: 5px;
+}
+
+.tab-btn:hover {
+  border-color: var(--cyan-dim);
+  color: var(--cyan);
+}
+
+.tab-btn.active {
+  background: var(--cyan-glow);
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 0 12px var(--cyan-glow);
+}
+
+/* ============================================================
+   PANELS
+   ============================================================ */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ============================================================
+   CARD
+   ============================================================ */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 16px;
+  transition: border-color var(--transition);
+}
+.card:hover { border-color: var(--border-glow); }
+
+.card-title {
+  font-size: 0.72rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+/* ============================================================
+   PASSWORD DISPLAY
+   ============================================================ */
+.pw-display-wrap {
+  background: var(--bg-deep);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  position: relative;
+  min-height: 72px;
+  display: flex; align-items: center;
+  transition: border-color 0.3s;
+}
+.pw-display-wrap.glow { border-color: var(--cyan); box-shadow: 0 0 20px var(--cyan-glow); }
+
+#pwDisplay {
+  font-family: var(--font-mono);
+  font-size: clamp(14px, 3.5vw, 22px);
+  color: var(--green);
+  word-break: break-all;
+  flex: 1;
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px #39ff1466;
+}
+
+#pwDisplay.placeholder { color: var(--text-muted); font-size: 0.9rem; font-family: var(--font-ui); text-shadow: none; }
+
+.pw-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: all var(--transition);
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #006a80, var(--cyan));
+  color: #000;
+  border-color: var(--cyan);
+  flex: 1;
+  min-height: 48px;
+  font-size: 0.9rem;
+  box-shadow: 0 0 16px var(--cyan-glow);
+}
+.btn-primary:hover { box-shadow: 0 0 28px #00d4ff66; transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+
+.btn-secondary {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+.btn-secondary:hover { border-color: var(--cyan-dim); color: var(--cyan); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border);
+  padding: 8px 12px;
+  font-size: 0.78rem;
+}
+.btn-ghost:hover { color: var(--cyan); border-color: var(--cyan-dim); }
+
+.btn-danger {
+  background: transparent;
+  color: var(--red);
+  border-color: #ff336644;
+}
+.btn-danger:hover { background: #ff336611; border-color: var(--red); }
+
+.btn-icon {
+  width: 40px; height: 40px;
+  padding: 0;
+  border-radius: var(--radius);
+  background: var(--bg-surface);
+  border-color: var(--border);
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+.btn-icon:hover { color: var(--cyan); border-color: var(--cyan-dim); }
+
+.btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ============================================================
+   FORM CONTROLS
+   ============================================================ */
+label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+select, input[type="text"], input[type="number"], textarea, input[type="search"] {
+  width: 100%;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  transition: border-color var(--transition);
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+}
+select:focus, input:focus, textarea:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px var(--cyan-glow);
+}
+select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300d4ff' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+
+input[type="range"] {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-surface);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  accent-color: var(--cyan);
+  border: none;
+  padding: 0;
+}
+
+.form-group { margin-bottom: 16px; }
+
+/* ============================================================
+   CHECKBOXES (custom)
+   ============================================================ */
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.checkbox-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+.checkbox-item:hover { border-color: var(--cyan-dim); }
+.checkbox-item.checked {
+  border-color: var(--cyan);
+  background: var(--cyan-glow);
+}
+
+.checkbox-item input { display: none; }
+
+.checkbox-dot {
+  width: 16px; height: 16px;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  transition: all var(--transition);
+}
+.checkbox-item.checked .checkbox-dot {
+  border-color: var(--cyan);
+  background: var(--cyan);
+  color: #000;
+}
+
+.checkbox-label { font-size: 0.82rem; color: var(--text-secondary); }
+.checkbox-item.checked .checkbox-label { color: var(--cyan); }
+
+/* ============================================================
+   OPTION PILLS (purpose / style / security)
+   ============================================================ */
+.pill-group {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+
+.pill {
+  padding: 7px 13px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  background: var(--bg-deep);
+  transition: all var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+.pill:hover { border-color: var(--cyan-dim); color: var(--text-primary); }
+.pill.selected {
+  background: var(--cyan-glow);
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan-glow);
+}
+
+/* ============================================================
+   STRENGTH METER
+   ============================================================ */
+.strength-bar-wrap {
+  height: 6px;
+  background: var(--bg-surface);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.strength-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease, background 0.4s ease;
+}
+
+.strength-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.strength-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ============================================================
+   ENTROPY / STATS GRID
+   ============================================================ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+@media (min-width: 500px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.stat-card {
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  text-align: center;
+}
+
+.stat-val {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--cyan);
+  font-family: var(--font-mono);
+  display: block;
+}
+.stat-lbl { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* ============================================================
+   HISTORY
+   ============================================================ */
+.history-list { display: flex; flex-direction: column; gap: 8px; }
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color var(--transition);
+}
+.history-item:hover { border-color: var(--border-glow); }
+
+.history-pw {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--green);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-meta {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.history-badges { display: flex; gap: 4px; }
+
+.badge {
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.badge-weak  { background: #ff336622; color: var(--red); }
+.badge-fair  { background: #ffb34722; color: var(--amber); }
+.badge-good  { background: #39ff1422; color: var(--green); }
+.badge-strong{ background: #00d4ff22; color: var(--cyan); }
+.badge-fav   { background: #9b59b622; color: var(--purple); }
+
+/* ============================================================
+   SEARCH BAR
+   ============================================================ */
+.search-wrap {
+  position: relative;
+  margin-bottom: 12px;
+}
+.search-wrap input { padding-left: 36px; }
+.search-icon {
+  position: absolute;
+  left: 12px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+/* ============================================================
+   TOOL CARDS GRID
+   ============================================================ */
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.tool-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.tool-card:hover {
+  border-color: var(--cyan);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px #00d4ff15;
+}
+
+.tool-icon { font-size: 1.6rem; }
+.tool-name { font-size: 0.88rem; font-weight: 700; color: var(--text-primary); }
+.tool-desc { font-size: 0.75rem; color: var(--text-muted); }
+
+/* ============================================================
+   TIPS / CHECKLIST
+   ============================================================ */
+.tip-list { display: flex; flex-direction: column; gap: 8px; }
+
+.tip-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-deep);
+  border-left: 3px solid var(--cyan);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.checklist { display: flex; flex-direction: column; gap: 6px; }
+
+.check-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.82rem;
+}
+.check-icon { font-size: 1rem; flex-shrink: 0; }
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+#toast {
+  position: fixed;
+  bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--bg-surface);
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  padding: 10px 20px;
+  border-radius: 24px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  z-index: 9999;
+  transition: transform 0.3s ease;
+  box-shadow: 0 0 20px var(--cyan-glow);
+  white-space: nowrap;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+.modal-backdrop {
+  display: none;
+  position: fixed; inset: 0;
+  background: #00000099;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.modal-backdrop.open { display: flex; }
+
+.modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modal h2 { font-size: 1rem; color: var(--cyan); margin-bottom: 16px; letter-spacing: 1px; }
+
+/* ============================================================
+   RANGE DISPLAY
+   ============================================================ */
+.range-wrap {
+  display: flex; align-items: center; gap: 10px;
+}
+.range-val {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  color: var(--cyan);
+  min-width: 36px;
+  text-align: right;
+}
+
+/* ============================================================
+   EXPORT BUTTONS
+   ============================================================ */
+.export-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.export-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 12px 8px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  text-align: center;
+}
+.export-btn:hover { border-color: var(--cyan-dim); color: var(--cyan); }
+.export-btn-icon { font-size: 1.4rem; }
+
+/* ============================================================
+   COMPARISON TABLE
+   ============================================================ */
+.compare-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.compare-table th, .compare-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.compare-table th { color: var(--cyan); font-weight: 700; font-size: 0.72rem; letter-spacing: 1px; text-transform: uppercase; }
+.compare-table tr:hover td { background: var(--bg-surface); }
+
+/* ============================================================
+   SCROLLABLE CONTENT
+   ============================================================ */
+.scrollable {
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* ============================================================
+   NOTES TEXTAREA
+   ============================================================ */
+.notes-area {
+  resize: vertical;
+  min-height: 80px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+/* ============================================================
+   AUTO-GENERATE TOGGLE
+   ============================================================ */
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.toggle-row:last-child { border-bottom: none; }
+.toggle-label { font-size: 0.82rem; color: var(--text-secondary); }
+
+.toggle {
+  position: relative;
+  width: 44px; height: 24px;
+  flex-shrink: 0;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  left: 2px; top: 2px;
+  transition: all var(--transition);
+}
+.toggle input:checked + .toggle-slider { background: var(--cyan-glow); border-color: var(--cyan); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(20px); background: var(--cyan); }
+
+/* ============================================================
+   PIN DISPLAY
+   ============================================================ */
+.pin-display {
+  font-family: var(--font-mono);
+  font-size: 2.4rem;
+  letter-spacing: 12px;
+  color: var(--amber);
+  text-align: center;
+  padding: 20px;
+  text-shadow: 0 0 16px #ffb34766;
+}
+
+/* ============================================================
+   RANDOM NUMBER
+   ============================================================ */
+.rng-display {
+  font-family: var(--font-mono);
+  font-size: 1.8rem;
+  color: var(--purple);
+  text-align: center;
+  padding: 16px;
+  word-break: break-all;
+  text-shadow: 0 0 16px #9b59b666;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .export-grid { grid-template-columns: repeat(3, 1fr); }
+  .tools-grid { grid-template-columns: 1fr 1fr; }
+  .header h1 { font-size: 1.3rem; }
+  .pw-actions { flex-direction: column; }
+  .btn-primary { min-height: 52px; }
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.panel.active { animation: fadeIn 0.2s ease; }
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 12px var(--cyan-glow); }
+  50% { box-shadow: 0 0 24px #00d4ff55; }
+}
+.pw-display-wrap.glow { animation: pulse 2s infinite; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinning { animation: spin 0.6s linear; }
+
+/* ============================================================
+   EXPIRY BADGE
+   ============================================================ */
+.expiry-badge {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #ffb34722;
+  color: var(--amber);
+  white-space: nowrap;
+}
+.expiry-badge.expired { background: #ff336622; color: var(--red); }
+
+/* ============================================================
+   SECTION DIVIDER
+   ============================================================ */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 16px 0;
+}
+
+/* ============================================================
+   RECOMMENDATION BOX
+   ============================================================ */
+.rec-box {
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--amber);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 10px 12px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 10px;
+  line-height: 1.6;
+}
+
+.rec-box.good { border-left-color: var(--green); }
+.rec-box.great { border-left-color: var(--cyan); }
+</style>
+</head>
+<body>
+
+<!-- Matrix Rain Background -->
+<canvas id="matrixCanvas"></canvas>
+
+<!-- Toast Notification -->
+<div id="toast">Copied!</div>
+
+<!-- Tool Modal -->
+<div class="modal-backdrop" id="toolModal">
+  <div class="modal" id="toolModalContent">
+    <h2 id="toolModalTitle">Tool</h2>
+    <div id="toolModalBody"></div>
+    <br>
+    <button class="btn btn-ghost" onclick="closeModal()">✕ Close</button>
+  </div>
+</div>
+
+<!-- App Root -->
+<div id="app">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-logo">
+      <div class="logo-icon">🔐</div>
+      <h1>CIPHERGEN</h1>
+    </div>
+    <p class="header-sub">Cryptographically Secure Password Suite</p>
+  </header>
+
+  <!-- Navigation -->
+  <nav class="nav-tabs" role="tablist">
+    <button class="tab-btn active" onclick="switchTab('generator')" id="tab-generator">⚡ Generator</button>
+    <button class="tab-btn" onclick="switchTab('history')" id="tab-history">📋 History</button>
+    <button class="tab-btn" onclick="switchTab('tools')" id="tab-tools">🛠 Tools</button>
+    <button class="tab-btn" onclick="switchTab('tips')" id="tab-tips">🛡 Security</button>
+    <button class="tab-btn" onclick="switchTab('settings')" id="tab-settings">⚙️ Settings</button>
+  </nav>
+
+  <!-- ====================================================
+       PANEL: GENERATOR
+       ==================================================== -->
+  <div class="panel active" id="panel-generator">
+
+    <!-- Password Output -->
+    <div class="card">
+      <div class="card-title">⚡ Generated Password</div>
+      <div class="pw-display-wrap" id="pwDisplayWrap">
+        <span id="pwDisplay" class="placeholder">Click Generate →</span>
+      </div>
+
+      <!-- Strength -->
+      <div id="strengthSection" style="margin-bottom:12px;display:none;">
+        <div class="strength-bar-wrap">
+          <div class="strength-bar" id="strengthBar"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span class="strength-label" id="strengthLabel"></span>
+          <span style="font-size:0.72rem;color:var(--text-muted)" id="entropyLabel"></span>
+        </div>
+        <div class="stats-grid" id="statsGrid" style="margin-top:10px;"></div>
+        <div class="rec-box" id="recBox"></div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="pw-actions">
+        <button class="btn btn-primary" onclick="generatePassword()" id="genBtn">
+          ⚡ Generate Password
+        </button>
+        <button class="btn btn-icon" onclick="copyPassword()" title="Copy">📋</button>
+        <button class="btn btn-icon" onclick="toggleFavorite()" id="favBtn" title="Favorite">☆</button>
+        <button class="btn btn-icon" onclick="showNoteModal()" title="Add Note">📝</button>
+      </div>
+    </div>
+
+    <!-- Purpose -->
+    <div class="card">
+      <div class="card-title">🎯 Purpose</div>
+      <div class="pill-group" id="purposeGroup">
+        <div class="pill selected" data-val="personal" onclick="selectPill(this,'purposeGroup')">Personal</div>
+        <div class="pill" data-val="social" onclick="selectPill(this,'purposeGroup')">Social Media</div>
+        <div class="pill" data-val="gaming" onclick="selectPill(this,'purposeGroup')">Gaming</div>
+        <div class="pill" data-val="banking" onclick="selectPill(this,'purposeGroup')">Banking</div>
+        <div class="pill" data-val="work" onclick="selectPill(this,'purposeGroup')">Work</div>
+        <div class="pill" data-val="email" onclick="selectPill(this,'purposeGroup')">Email</div>
+        <div class="pill" data-val="custom" onclick="selectPill(this,'purposeGroup')">Custom</div>
+      </div>
+    </div>
+
+    <!-- Security Level -->
+    <div class="card">
+      <div class="card-title">🔒 Security Level</div>
+      <div class="pill-group" id="securityGroup">
+        <div class="pill" data-val="low" onclick="selectPill(this,'securityGroup')">Low</div>
+        <div class="pill selected" data-val="medium" onclick="selectPill(this,'securityGroup')">Medium</div>
+        <div class="pill" data-val="high" onclick="selectPill(this,'securityGroup')">High</div>
+        <div class="pill" data-val="extreme" onclick="selectPill(this,'securityGroup')">Extremely Secure</div>
+      </div>
+    </div>
+
+    <!-- Length -->
+    <div class="card">
+      <div class="card-title">📏 Password Length</div>
+      <div class="range-wrap">
+        <input type="range" id="lengthSlider" min="4" max="128" value="16"
+               oninput="document.getElementById('lengthVal').textContent=this.value">
+        <span class="range-val" id="lengthVal">16</span>
+      </div>
+    </div>
+
+    <!-- Style -->
+    <div class="card">
+      <div class="card-title">🎨 Password Style</div>
+      <div class="pill-group" id="styleGroup">
+        <div class="pill" data-val="easy" onclick="selectPill(this,'styleGroup')">Easy to Remember</div>
+        <div class="pill selected" data-val="balanced" onclick="selectPill(this,'styleGroup')">Balanced</div>
+        <div class="pill" data-val="secure" onclick="selectPill(this,'styleGroup')">Max Security</div>
+        <div class="pill" data-val="pronounceable" onclick="selectPill(this,'styleGroup')">Pronounceable</div>
+        <div class="pill" data-val="random" onclick="selectPill(this,'styleGroup')">Random</div>
+        <div class="pill" data-val="passphrase" onclick="selectPill(this,'styleGroup')">Passphrase</div>
+      </div>
+    </div>
+
+    <!-- Character Types -->
+    <div class="card">
+      <div class="card-title">🔤 Character Types</div>
+      <div class="checkbox-grid" id="charTypes">
+        <div class="checkbox-item checked" data-key="upper" onclick="toggleCheck(this)">
+          <div class="checkbox-dot">✓</div>
+          <span class="checkbox-label">Uppercase A-Z</span>
+        </div>
+        <div class="checkbox-item checked" data-key="lower" onclick="toggleCheck(this)">
+          <div class="checkbox-dot">✓</div>
+          <span class="checkbox-label">Lowercase a-z</span>
+        </div>
+        <div class="checkbox-item checked" data-key="numbers" onclick="toggleCheck(this)">
+          <div class="checkbox-dot">✓</div>
+          <span class="checkbox-label">Numbers 0-9</span>
+        </div>
+        <div class="checkbox-item" data-key="symbols" onclick="toggleCheck(this)">
+          <div class="checkbox-dot"></div>
+          <span class="checkbox-label">Symbols !@#$</span>
+        </div>
+        <div class="checkbox-item" data-key="custom" onclick="toggleCheck(this)">
+          <div class="checkbox-dot"></div>
+          <span class="checkbox-label">Custom Chars</span>
+        </div>
+      </div>
+      <div id="customCharsWrap" style="margin-top:10px;display:none;">
+        <label>Custom Character Set</label>
+        <input type="text" id="customChars" placeholder="e.g. @#$%^&*">
+      </div>
+    </div>
+
+    <!-- Expiry Reminder -->
+    <div class="card">
+      <div class="card-title">⏰ Expiry Reminder</div>
+      <div class="form-group">
+        <label>Remind me to change this password after</label>
+        <select id="expirySelect">
+          <option value="0">No reminder</option>
+          <option value="30">30 days</option>
+          <option value="60">60 days</option>
+          <option value="90">90 days</option>
+          <option value="180">6 months</option>
+          <option value="365">1 year</option>
+        </select>
+      </div>
+    </div>
+
+  </div><!-- /panel-generator -->
+
+
+  <!-- ====================================================
+       PANEL: HISTORY
+       ==================================================== -->
+  <div class="panel" id="panel-history">
+
+    <div class="card">
+      <div class="card-title">📋 Password History</div>
+
+      <!-- Search -->
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="search" id="histSearch" placeholder="Search passwords…" oninput="renderHistory()">
+      </div>
+
+      <div id="historyList" class="history-list scrollable">
+        <p style="color:var(--text-muted);text-align:center;padding:20px;font-size:0.82rem;">No passwords generated yet.</p>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Export / Clear -->
+      <div class="export-grid" style="margin-bottom:10px;">
+        <div class="export-btn" onclick="exportHistory('txt')">
+          <span class="export-btn-icon">📄</span>TXT
+        </div>
+        <div class="export-btn" onclick="exportHistory('json')">
+          <span class="export-btn-icon">{ }</span>JSON
+        </div>
+        <div class="export-btn" onclick="exportHistory('csv')">
+          <span class="export-btn-icon">📊</span>CSV
+        </div>
+      </div>
+
+      <button class="btn btn-danger" onclick="clearHistory()" style="width:100%;">🗑 Clear History</button>
+    </div>
+
+    <!-- Favorites -->
+    <div class="card">
+      <div class="card-title">⭐ Favorites</div>
+      <div id="favoritesList" class="history-list">
+        <p style="color:var(--text-muted);text-align:center;padding:16px;font-size:0.82rem;">No favorites yet.</p>
+      </div>
+    </div>
+
+  </div><!-- /panel-history -->
+
+
+  <!-- ====================================================
+       PANEL: TOOLS
+       ==================================================== -->
+  <div class="panel" id="panel-tools">
+
+    <div class="tools-grid">
+      <div class="tool-card" onclick="openTool('analyzer')">
+        <div class="tool-icon">🔍</div>
+        <div class="tool-name">Strength Analyzer</div>
+        <div class="tool-desc">Analyze any password you type</div>
+      </div>
+      <div class="tool-card" onclick="openTool('passphrase')">
+        <div class="tool-icon">🗝</div>
+        <div class="tool-name">Passphrase Gen</div>
+        <div class="tool-desc">Memorable word-based phrases</div>
+      </div>
+      <div class="tool-card" onclick="openTool('username')">
+        <div class="tool-icon">👤</div>
+        <div class="tool-name">Username Gen</div>
+        <div class="tool-desc">Creative secure usernames</div>
+      </div>
+      <div class="tool-card" onclick="openTool('pin')">
+        <div class="tool-icon">🔢</div>
+        <div class="tool-name">PIN Generator</div>
+        <div class="tool-desc">Numeric PINs of any length</div>
+      </div>
+      <div class="tool-card" onclick="openTool('rng')">
+        <div class="tool-icon">🎲</div>
+        <div class="tool-name">Secure RNG</div>
+        <div class="tool-desc">Cryptographic random numbers</div>
+      </div>
+      <div class="tool-card" onclick="openTool('compare')">
+        <div class="tool-icon">⚖️</div>
+        <div class="tool-name">Compare Tool</div>
+        <div class="tool-desc">Compare two passwords side by side</div>
+      </div>
+      <div class="tool-card" onclick="openTool('checklist')">
+        <div class="tool-icon">✅</div>
+        <div class="tool-name">Password Checklist</div>
+        <div class="tool-desc">Audit a password against best practices</div>
+      </div>
+      <div class="tool-card" onclick="switchTab('tips')">
+        <div class="tool-icon">📚</div>
+        <div class="tool-name">Security Tips</div>
+        <div class="tool-desc">Best practices dashboard</div>
+      </div>
+    </div>
+
+  </div><!-- /panel-tools -->
+
+
+  <!-- ====================================================
+       PANEL: SECURITY TIPS
+       ==================================================== -->
+  <div class="panel" id="panel-tips">
+
+    <div class="card">
+      <div class="card-title">🛡 Security Tips Dashboard</div>
+      <div class="tip-list">
+        <div class="tip-item">🔐 <span>Use a unique password for every account. Reusing passwords is the #1 cause of credential breaches.</span></div>
+        <div class="tip-item">📏 <span>Longer is stronger. A 20-character passphrase beats a complex 8-character password in both security and memorability.</span></div>
+        <div class="tip-item">🎲 <span>Always use a cryptographically secure random generator (like this app). Human-chosen passwords are predictable.</span></div>
+        <div class="tip-item">🔄 <span>Rotate passwords for critical accounts every 90 days, or immediately if a service you use reports a data breach.</span></div>
+        <div class="tip-item">🛡 <span>Enable Two-Factor Authentication (2FA) wherever possible — it stops over 99% of automated attacks even if your password is leaked.</span></div>
+        <div class="tip-item">💾 <span>Store passwords in a reputable password manager (Bitwarden, KeePass, 1Password) — never in plaintext files or spreadsheets.</span></div>
+        <div class="tip-item">🚫 <span>Never share passwords over SMS, email, or chat apps. These channels are not encrypted end-to-end at the server level.</span></div>
+        <div class="tip-item">👀 <span>Beware of phishing. Always check the URL before entering credentials. Bookmark critical sites like banking portals.</span></div>
+        <div class="tip-item">📵 <span>Don't log in to sensitive accounts on public Wi-Fi without a trusted VPN.</span></div>
+        <div class="tip-item">🧠 <span>A passphrase like "River-Castle-Moon-92" has higher entropy than "P@ss1!" and is far easier to remember.</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 Crack Time Reference</div>
+      <table class="compare-table">
+        <thead>
+          <tr><th>Password Type</th><th>Example</th><th>Crack Time</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>4-digit PIN</td><td>7382</td><td style="color:var(--red)">< 1 second</td></tr>
+          <tr><td>8 lowercase</td><td>password</td><td style="color:var(--red)">< 1 minute</td></tr>
+          <tr><td>8 mixed</td><td>P@ss1234</td><td style="color:var(--amber)">Hours</td></tr>
+          <tr><td>12 random</td><td>aB3#kL9!mZ2@</td><td style="color:var(--green)">Centuries</td></tr>
+          <tr><td>20 random</td><td>aB3#kL9!mZ2@xQ8$pR7&</td><td style="color:var(--cyan)">Heat death of universe</td></tr>
+          <tr><td>4-word phrase</td><td>River-Castle-Moon-92</td><td style="color:var(--cyan)">Millions of years</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /panel-tips -->
+
+
+  <!-- ====================================================
+       PANEL: SETTINGS
+       ==================================================== -->
+  <div class="panel" id="panel-settings">
+
+    <div class="card">
+      <div class="card-title">⚙️ Preferences</div>
+
+      <div class="toggle-row">
+        <span class="toggle-label">Auto-generate on settings change</span>
+        <label class="toggle">
+          <input type="checkbox" id="autoGenToggle" onchange="saveSettings()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">Show entropy details</span>
+        <label class="toggle">
+          <input type="checkbox" id="showEntropyToggle" checked onchange="saveSettings()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">Save passwords to history</span>
+        <label class="toggle">
+          <input type="checkbox" id="saveHistoryToggle" checked onchange="saveSettings()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">Prevent duplicate passwords</span>
+        <label class="toggle">
+          <input type="checkbox" id="noDupeToggle" checked onchange="saveSettings()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🗑 Data Management</div>
+      <div class="btn-group">
+        <button class="btn btn-danger" onclick="clearHistory()">Clear History</button>
+        <button class="btn btn-danger" onclick="clearAll()">Reset Everything</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">ℹ️ About</div>
+      <p style="font-size:0.8rem;color:var(--text-secondary);line-height:1.8;">
+        <strong style="color:var(--cyan)">CipherGen</strong> v2.0<br>
+        100% client-side — no data ever leaves your device.<br>
+        Uses <code style="color:var(--green)">crypto.getRandomValues()</code> for cryptographically secure generation.<br>
+        Built for modern browsers. Works offline.
+      </p>
+    </div>
+
+  </div><!-- /panel-settings -->
+
+</div><!-- /app -->
+
+
+<script>
+/* ============================================================
+   MATRIX RAIN
+   ============================================================ */
+(function() {
+  const canvas = document.getElementById('matrixCanvas');
+  const ctx = canvas.getContext('2d');
+  let cols, drops;
+  const chars = '01アイウエオカキクケコサシスセソ';
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    cols  = Math.floor(canvas.width / 16);
+    drops = Array(cols).fill(1);
+  }
+
+  function draw() {
+    ctx.fillStyle = 'rgba(8,13,26,0.05)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#00d4ff';
+    ctx.font = '12px monospace';
+    drops.forEach((y, i) => {
+      const ch = chars[Math.floor(Math.random() * chars.length)];
+      ctx.fillText(ch, i * 16, y * 16);
+      if (y * 16 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    });
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  setInterval(draw, 60);
+})();
+
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let state = {
+  currentPassword: '',
+  isFavorite: false,
+  history: [],
+  settings: {
+    autoGen: false,
+    showEntropy: true,
+    saveHistory: true,
+    noDupe: true
+  }
+};
+
+// Load from localStorage
+(function loadState() {
+  try {
+    const saved = localStorage.getItem('ciphergen');
+    if (saved) {
+      const data = JSON.parse(saved);
+      state.history  = data.history  || [];
+      state.settings = Object.assign(state.settings, data.settings || {});
+    }
+  } catch(e) {}
+  applySettings();
+  renderHistory();
+  renderFavorites();
+  checkExpiries();
+})();
+
+function saveState() {
+  try {
+    localStorage.setItem('ciphergen', JSON.stringify({
+      history:  state.history,
+      settings: state.settings
+    }));
+  } catch(e) {}
+}
+
+
+/* ============================================================
+   WORD BANKS
+   ============================================================ */
+const WORDS_NOUN = ['River','Castle','Moon','Tiger','Dragon','Storm','Crystal','Shadow','Eagle','Phoenix',
+  'Mountain','Ocean','Forest','Thunder','Lightning','Falcon','Viper','Cobra','Matrix','Nexus',
+  'Vector','Cipher','Pixel','Comet','Nebula','Titan','Atlas','Orion','Nova','Sphinx'];
+
+const WORDS_ADJ  = ['Silent','Golden','Dark','Bright','Swift','Ancient','Frozen','Blazing','Cosmic','Hidden',
+  'Sacred','Mystic','Wild','Iron','Steel','Jade','Crimson','Azure','Violet','Electric'];
+
+const WORDS_VERB = ['Run','Jump','Fly','Chase','Break','Strike','Launch','Build','Craft','Guard'];
+
+const ADJ_COLORS = ['Red','Blue','Green','Black','White','Gold','Silver','Purple','Orange','Teal'];
+
+const USERNAME_PREFIX = ['Shadow','Cyber','Neo','Dark','Ghost','Iron','Storm','Neon','Pixel','Zero',
+  'Alpha','Beta','Omega','Hyper','Ultra','Turbo','Mega','Max','Pro','Elite'];
+
+const USERNAME_SUFFIX = ['Wolf','Hawk','Fox','Bear','Lion','Eagle','Viper','Titan','Rex','Star',
+  'Blade','Shield','Core','Forge','Nexus','Prime','Byte','Code','Net','Hub'];
+
+
+/* ============================================================
+   TAB SWITCHING
+   ============================================================ */
+function switchTab(tab) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+
+/* ============================================================
+   PILL SELECTION
+   ============================================================ */
+function selectPill(el, groupId) {
+  document.querySelectorAll('#' + groupId + ' .pill').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+  if (state.settings.autoGen) generatePassword();
+}
+
+function getPillVal(groupId) {
+  const sel = document.querySelector('#' + groupId + ' .pill.selected');
+  return sel ? sel.dataset.val : null;
+}
+
+
+/* ============================================================
+   CHECKBOX TOGGLE
+   ============================================================ */
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+  el.querySelector('.checkbox-dot').textContent = el.classList.contains('checked') ? '✓' : '';
+
+  // Show / hide custom chars input
+  if (el.dataset.key === 'custom') {
+    document.getElementById('customCharsWrap').style.display =
+      el.classList.contains('checked') ? 'block' : 'none';
+  }
+  if (state.settings.autoGen) generatePassword();
+}
+
+function isChecked(key) {
+  const el = document.querySelector(`[data-key="${key}"]`);
+  return el ? el.classList.contains('checked') : false;
+}
+
+
+/* ============================================================
+   CRYPTO RANDOM
+   ============================================================ */
+function cryptoRandInt(max) {
+  const arr = new Uint32Array(1);
+  crypto.getRandomValues(arr);
+  return arr[0] % max;
+}
+
+function cryptoRandFloat() {
+  const arr = new Uint32Array(1);
+  crypto.getRandomValues(arr);
+  return arr[0] / 0xFFFFFFFF;
+}
+
+function cryptoPick(arr) {
+  return arr[cryptoRandInt(arr.length)];
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = cryptoRandInt(i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+
+/* ============================================================
+   BUILD CHARACTER SET
+   ============================================================ */
+function buildCharset() {
+  let cs = '';
+  if (isChecked('upper'))   cs += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  if (isChecked('lower'))   cs += 'abcdefghijklmnopqrstuvwxyz';
+  if (isChecked('numbers')) cs += '0123456789';
+  if (isChecked('symbols')) cs += '!@#$%^&*()-_=+[]{}|;:,.<>?';
+  if (isChecked('custom')) {
+    const custom = document.getElementById('customChars').value;
+    cs += custom;
+  }
+  // Remove duplicates
+  return [...new Set(cs)].join('');
+}
+
+
+/* ============================================================
+   PRONOUNCEABLE GENERATOR
+   ============================================================ */
+function genPronounceable(len) {
+  const vowels     = 'aeiou';
+  const consonants = 'bcdfghjklmnprstvwxyz';
+  let result = '';
+  let useVowel = cryptoRandFloat() > 0.5;
+  while (result.length < len) {
+    const pool = useVowel ? vowels : consonants;
+    let ch = cryptoPick(pool.split(''));
+    if (cryptoRandFloat() > 0.7) ch = ch.toUpperCase();
+    result += ch;
+    useVowel = !useVowel;
+  }
+  return result;
+}
+
+
+/* ============================================================
+   PASSPHRASE GENERATOR
+   ============================================================ */
+function genPassphrase(wordCount) {
+  const words = [];
+  for (let i = 0; i < wordCount; i++) {
+    words.push(cryptoPick(WORDS_NOUN));
+  }
+  const num = cryptoRandInt(99) + 1;
+  words.push(String(num).padStart(2, '0'));
+  return words.join('-');
+}
+
+
+/* ============================================================
+   CORE PASSWORD GENERATOR
+   ============================================================ */
+function generatePassword() {
+  const len      = parseInt(document.getElementById('lengthSlider').value);
+  const style    = getPillVal('styleGroup');
+  const security = getPillVal('securityGroup');
+
+  let password = '';
+
+  // Apply security level overrides
+  if (security === 'low')    applySecurityPreset(10, false, false);
+  if (security === 'high')   applySecurityPreset(20, true, true);
+  if (security === 'extreme') applySecurityPreset(32, true, true);
+
+  const charset = buildCharset();
+
+  if (style === 'passphrase') {
+    const wc = Math.max(3, Math.floor(len / 5));
+    password = genPassphrase(wc);
+  } else if (style === 'pronounceable') {
+    password = genPronounceable(len);
+  } else if (style === 'easy') {
+    // Capitalised word + numbers
+    const word = cryptoPick(WORDS_NOUN);
+    const nums = String(2020 + cryptoRandInt(10));
+    password = word + nums;
+    if (password.length < len) {
+      const extra = buildCharset().replace(/[^a-zA-Z]/, '');
+      while (password.length < len) password += cryptoPick((extra || 'abcde').split(''));
+    }
+    password = password.substring(0, len);
+  } else if (style === 'balanced') {
+    // Word + symbol + numbers
+    const word = cryptoPick(WORDS_NOUN);
+    const sym  = cryptoPick('!@#$%&*'.split(''));
+    const nums = String(2020 + cryptoRandInt(10));
+    password = word + sym + nums;
+    if (password.length < len && charset) {
+      while (password.length < len) password += charset[cryptoRandInt(charset.length)];
+    }
+    password = password.substring(0, len);
+  } else {
+    // random / secure / max — pure random from charset
+    if (!charset) {
+      showToast('⚠️ Select at least one character type!');
+      return;
+    }
+    for (let i = 0; i < len; i++) {
+      password += charset[cryptoRandInt(charset.length)];
+    }
+  }
+
+  // Check for duplicate
+  if (state.settings.noDupe && state.history.some(h => h.password === password)) {
+    generatePassword(); // Regenerate
+    return;
+  }
+
+  state.currentPassword = password;
+  state.isFavorite = false;
+  document.getElementById('favBtn').textContent = '☆';
+
+  // Display
+  const display = document.getElementById('pwDisplay');
+  display.textContent = password;
+  display.classList.remove('placeholder');
+
+  const wrap = document.getElementById('pwDisplayWrap');
+  wrap.classList.add('glow');
+
+  // Animate gen button
+  const btn = document.getElementById('genBtn');
+  btn.classList.add('spinning');
+  setTimeout(() => btn.classList.remove('spinning'), 600);
+
+  // Analyse
+  const analysis = analysePassword(password);
+  renderStrength(analysis);
+
+  // Save to history
+  if (state.settings.saveHistory) {
+    const expiry = parseInt(document.getElementById('expirySelect').value);
+    const entry = {
+      id:        Date.now(),
+      password,
+      purpose:   getPillVal('purposeGroup'),
+      style,
+      security,
+      strength:  analysis.label,
+      entropy:   analysis.entropy.toFixed(1),
+      crackTime: analysis.crackTime,
+      note:      '',
+      favorite:  false,
+      created:   new Date().toISOString(),
+      expiry:    expiry ? new Date(Date.now() + expiry * 86400000).toISOString() : null
+    };
+    state.history.unshift(entry);
+    if (state.history.length > 200) state.history.pop();
+    saveState();
+    renderHistory();
+    renderFavorites();
+  }
+}
+
+function applySecurityPreset(minLen, addSymbols, forceAll) {
+  const slider = document.getElementById('lengthSlider');
+  if (parseInt(slider.value) < minLen) {
+    slider.value = minLen;
+    document.getElementById('lengthVal').textContent = minLen;
+  }
+  if (forceAll) {
+    ['upper','lower','numbers','symbols'].forEach(k => {
+      const el = document.querySelector(`[data-key="${k}"]`);
+      if (el && !el.classList.contains('checked')) {
+        el.classList.add('checked');
+        el.querySelector('.checkbox-dot').textContent = '✓';
+      }
+    });
+  }
+}
+
+
+/* ============================================================
+   PASSWORD ANALYSIS
+   ============================================================ */
+function analysePassword(pw) {
+  if (!pw) return { score: 0, label: 'None', color: '#3d6080', percent: 0, entropy: 0, crackTime: '—', charset: 0 };
+
+  let charsetSize = 0;
+  if (/[a-z]/.test(pw)) charsetSize += 26;
+  if (/[A-Z]/.test(pw)) charsetSize += 26;
+  if (/[0-9]/.test(pw)) charsetSize += 10;
+  if (/[^a-zA-Z0-9]/.test(pw)) charsetSize += 32;
+
+  const entropy = pw.length * Math.log2(charsetSize || 1);
+
+  // Deductions
+  let deductions = 0;
+  if (/(.)\1{2,}/.test(pw)) deductions += 10;  // repeated chars
+  if (/^[a-zA-Z]+$/.test(pw)) deductions += 8;  // only letters
+  if (/^[0-9]+$/.test(pw)) deductions += 15;    // only numbers
+  if (pw.length < 8) deductions += 20;
+  if (/password|123456|qwerty|letmein|admin|welcome/i.test(pw)) deductions += 40;
+
+  const effectiveEntropy = Math.max(0, entropy - deductions);
+
+  let label, color, percent, score, crackTime;
+
+  if (effectiveEntropy < 28) {
+    label = 'Very Weak'; color = '#ff3366'; percent = 10; score = 1;
+    crackTime = 'Seconds';
+  } else if (effectiveEntropy < 40) {
+    label = 'Weak';      color = '#ff7043'; percent = 28; score = 2;
+    crackTime = 'Minutes to hours';
+  } else if (effectiveEntropy < 60) {
+    label = 'Fair';      color = var_amber; percent = 50; score = 3;
+    crackTime = 'Days to weeks';
+  } else if (effectiveEntropy < 80) {
+    label = 'Good';      color = '#8bc34a'; percent = 72; score = 4;
+    crackTime = 'Years';
+  } else if (effectiveEntropy < 100) {
+    label = 'Strong';    color = '#39ff14'; percent = 88; score = 5;
+    crackTime = 'Centuries';
+  } else {
+    label = 'Fortress';  color = '#00d4ff'; percent = 100; score = 6;
+    crackTime = 'Universe-scale';
+  }
+
+  return { score, label, color, percent, entropy, effectiveEntropy, crackTime, charsetSize, pw };
+}
+
+const var_amber = '#ffb347';
+
+function getUniqueScore(pw) {
+  // Check uniqueness against history (excluding current)
+  const matches = state.history.filter(h => h.password === pw).length;
+  return matches <= 1 ? '✅ Unique' : `⚠️ Used ${matches}x`;
+}
+
+function renderStrength(a) {
+  const section = document.getElementById('strengthSection');
+  const bar     = document.getElementById('strengthBar');
+  const label   = document.getElementById('strengthLabel');
+  const entropy = document.getElementById('entropyLabel');
+  const stats   = document.getElementById('statsGrid');
+  const rec     = document.getElementById('recBox');
+
+  section.style.display = 'block';
+  bar.style.width   = a.percent + '%';
+  bar.style.background = a.color;
+  label.textContent = a.label;
+  label.style.color = a.color;
+
+  if (state.settings.showEntropy) {
+    entropy.textContent = `${a.entropy.toFixed(1)} bits entropy`;
+  }
+
+  stats.innerHTML = `
+    <div class="stat-card"><span class="stat-val" style="color:${a.color}">${a.label}</span><span class="stat-lbl">Strength</span></div>
+    <div class="stat-card"><span class="stat-val">${a.entropy.toFixed(0)}</span><span class="stat-lbl">Entropy Bits</span></div>
+    <div class="stat-card"><span class="stat-val">${a.charsetSize}</span><span class="stat-lbl">Charset Size</span></div>
+    <div class="stat-card"><span class="stat-val" style="font-size:0.75rem;color:var(--green)">${getUniqueScore(a.pw)}</span><span class="stat-lbl">Uniqueness</span></div>
+  `;
+
+  // Recommendation
+  let recText = '';
+  let recClass = '';
+  if (a.score <= 2) {
+    recClass = '';
+    recText = '⚠️ This password is too weak. Increase length to 16+ characters, add symbols and numbers, and avoid common patterns.';
+  } else if (a.score === 3) {
+    recClass = '';
+    recText = '⚡ Decent, but could be stronger. Consider 20+ characters with mixed case, symbols, and numbers.';
+  } else if (a.score >= 5) {
+    recClass = 'great';
+    recText = `✅ Excellent! Estimated crack time: ${a.crackTime}. Store this in a password manager.`;
+  } else {
+    recClass = 'good';
+    recText = `👍 Good password. Crack time estimate: ${a.crackTime}. For critical accounts, consider going longer.`;
+  }
+  rec.textContent = recText;
+  rec.className   = 'rec-box ' + recClass;
+}
+
+
+/* ============================================================
+   COPY
+   ============================================================ */
+function copyPassword() {
+  if (!state.currentPassword) return;
+  navigator.clipboard.writeText(state.currentPassword).then(() => {
+    showToast('✅ Password copied!');
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = state.currentPassword;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('✅ Copied!');
+  });
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => showToast('✅ Copied!')).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta); showToast('✅ Copied!');
+  });
+}
+
+
+/* ============================================================
+   FAVORITES
+   ============================================================ */
+function toggleFavorite() {
+  if (!state.currentPassword) return;
+  state.isFavorite = !state.isFavorite;
+  document.getElementById('favBtn').textContent = state.isFavorite ? '⭐' : '☆';
+
+  // Update in history
+  const entry = state.history.find(h => h.password === state.currentPassword);
+  if (entry) { entry.favorite = state.isFavorite; saveState(); renderFavorites(); }
+}
+
+
+/* ============================================================
+   NOTE MODAL
+   ============================================================ */
+function showNoteModal() {
+  if (!state.currentPassword) { showToast('Generate a password first!'); return; }
+  const entry = state.history.find(h => h.password === state.currentPassword);
+  const current = entry ? entry.note : '';
+  openModal('📝 Add Note', `
+    <p style="color:var(--text-secondary);font-size:0.8rem;margin-bottom:8px;">Password: <code style="color:var(--green)">${escHtml(state.currentPassword)}</code></p>
+    <label>Note</label>
+    <textarea id="noteInput" class="notes-area" placeholder="e.g. Used for Netflix account…">${escHtml(current)}</textarea>
+    <br><br>
+    <button class="btn btn-primary" onclick="saveNote()">💾 Save Note</button>
+  `);
+}
+
+function saveNote() {
+  const note = document.getElementById('noteInput').value;
+  const entry = state.history.find(h => h.password === state.currentPassword);
+  if (entry) { entry.note = note; saveState(); renderHistory(); }
+  closeModal();
+  showToast('📝 Note saved!');
+}
+
+
+/* ============================================================
+   HISTORY RENDERING
+   ============================================================ */
+function renderHistory() {
+  const container = document.getElementById('historyList');
+  const q = (document.getElementById('histSearch')?.value || '').toLowerCase();
+  let items = state.history.filter(h =>
+    h.password.toLowerCase().includes(q) ||
+    (h.note || '').toLowerCase().includes(q) ||
+    (h.purpose || '').toLowerCase().includes(q)
+  );
+
+  if (!items.length) {
+    container.innerHTML = `<p style="color:var(--text-muted);text-align:center;padding:20px;font-size:0.82rem;">${q ? 'No results.' : 'No passwords generated yet.'}</p>`;
+    return;
+  }
+
+  container.innerHTML = items.map(h => {
+    const expBadge = h.expiry ? getExpiryBadge(h.expiry) : '';
+    const strClass = strengthClass(h.strength);
+    return `
+      <div class="history-item">
+        <span class="history-pw" title="${escHtml(h.password)}">${escHtml(h.password)}</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
+          <div class="history-badges">
+            <span class="badge ${strClass}">${h.strength}</span>
+            ${h.favorite ? '<span class="badge badge-fav">★ FAV</span>' : ''}
+          </div>
+          <span class="history-meta">${h.entropy}b · ${formatDate(h.created)}</span>
+          ${expBadge}
+        </div>
+        <div style="display:flex;gap:4px;">
+          <button class="btn-icon btn" title="Copy" onclick="copyText('${escJs(h.password)}')">📋</button>
+          <button class="btn-icon btn" title="Delete" onclick="deleteHistory(${h.id})">🗑</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderFavorites() {
+  const container = document.getElementById('favoritesList');
+  const favs = state.history.filter(h => h.favorite);
+  if (!favs.length) {
+    container.innerHTML = `<p style="color:var(--text-muted);text-align:center;padding:16px;font-size:0.82rem;">No favorites yet.</p>`;
+    return;
+  }
+  container.innerHTML = favs.map(h => `
+    <div class="history-item">
+      <span class="history-pw">${escHtml(h.password)}</span>
+      <span class="badge badge-fav">★</span>
+      <button class="btn-icon btn" onclick="copyText('${escJs(h.password)}')">📋</button>
+    </div>
+  `).join('');
+}
+
+function deleteHistory(id) {
+  state.history = state.history.filter(h => h.id !== id);
+  saveState(); renderHistory(); renderFavorites();
+}
+
+function clearHistory() {
+  if (!confirm('Delete all password history? This cannot be undone.')) return;
+  state.history = [];
+  saveState(); renderHistory(); renderFavorites();
+  showToast('🗑 History cleared.');
+}
+
+function clearAll() {
+  if (!confirm('Reset everything? All history and settings will be lost.')) return;
+  localStorage.removeItem('ciphergen');
+  location.reload();
+}
+
+function strengthClass(label) {
+  if (!label) return '';
+  if (label.includes('Weak') || label.includes('Very')) return 'badge-weak';
+  if (label === 'Fair') return 'badge-fair';
+  if (label === 'Good') return 'badge-good';
+  return 'badge-strong';
+}
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
+}
+
+function getExpiryBadge(expiryISO) {
+  const diff = new Date(expiryISO) - Date.now();
+  const days = Math.ceil(diff / 86400000);
+  if (days < 0)  return `<span class="expiry-badge expired">⚠️ Expired</span>`;
+  if (days < 14) return `<span class="expiry-badge">⏰ ${days}d left</span>`;
+  return `<span class="expiry-badge">✅ ${days}d left</span>`;
+}
+
+function checkExpiries() {
+  const expiring = state.history.filter(h => {
+    if (!h.expiry) return false;
+    const days = Math.ceil((new Date(h.expiry) - Date.now()) / 86400000);
+    return days <= 7 && days >= 0;
+  });
+  if (expiring.length) {
+    setTimeout(() => showToast(`⏰ ${expiring.length} password(s) expiring soon!`), 1500);
+  }
+}
+
+
+/* ============================================================
+   EXPORT
+   ============================================================ */
+function exportHistory(format) {
+  if (!state.history.length) { showToast('No history to export.'); return; }
+
+  let content, filename, mime;
+
+  if (format === 'txt') {
+    content  = state.history.map(h => `${h.password}\t${h.strength}\t${h.entropy}b\t${h.created}`).join('\n');
+    filename = 'ciphergen-passwords.txt';
+    mime     = 'text/plain';
+  } else if (format === 'json') {
+    content  = JSON.stringify(state.history, null, 2);
+    filename = 'ciphergen-passwords.json';
+    mime     = 'application/json';
+  } else {
+    const rows = [['Password','Strength','Entropy','Purpose','Created','Expiry','Note']];
+    state.history.forEach(h => rows.push([
+      h.password, h.strength, h.entropy + 'b',
+      h.purpose || '', h.created, h.expiry || '', h.note || ''
+    ]));
+    content  = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+    filename = 'ciphergen-passwords.csv';
+    mime     = 'text/csv';
+  }
+
+  const blob = new Blob([content], { type: mime });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`📥 Exported ${format.toUpperCase()}!`);
+}
+
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+function applySettings() {
+  document.getElementById('autoGenToggle').checked   = state.settings.autoGen;
+  document.getElementById('showEntropyToggle').checked = state.settings.showEntropy;
+  document.getElementById('saveHistoryToggle').checked = state.settings.saveHistory;
+  document.getElementById('noDupeToggle').checked    = state.settings.noDupe;
+}
+
+function saveSettings() {
+  state.settings.autoGen      = document.getElementById('autoGenToggle').checked;
+  state.settings.showEntropy  = document.getElementById('showEntropyToggle').checked;
+  state.settings.saveHistory  = document.getElementById('saveHistoryToggle').checked;
+  state.settings.noDupe       = document.getElementById('noDupeToggle').checked;
+  saveState();
+}
+
+
+/* ============================================================
+   TOOL MODAL
+   ============================================================ */
+function openModal(title, bodyHtml) {
+  document.getElementById('toolModalTitle').textContent = title;
+  document.getElementById('toolModalBody').innerHTML = bodyHtml;
+  document.getElementById('toolModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('toolModal').classList.remove('open');
+}
+
+document.getElementById('toolModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+
+/* ============================================================
+   TOOLS
+   ============================================================ */
+function openTool(name) {
+  switch(name) {
+    case 'analyzer':   toolAnalyzer();   break;
+    case 'passphrase': toolPassphrase(); break;
+    case 'username':   toolUsername();   break;
+    case 'pin':        toolPIN();        break;
+    case 'rng':        toolRNG();        break;
+    case 'compare':    toolCompare();    break;
+    case 'checklist':  toolChecklist();  break;
+  }
+}
+
+/* --- STRENGTH ANALYZER --- */
+function toolAnalyzer() {
+  openModal('🔍 Password Strength Analyzer', `
+    <div class="form-group">
+      <label>Enter any password to analyze</label>
+      <input type="text" id="analyzeInput" placeholder="Type or paste a password…"
+             oninput="liveAnalyze()" style="font-family:var(--font-mono);">
+    </div>
+    <div id="analyzeResult"></div>
+  `);
+}
+
+function liveAnalyze() {
+  const pw = document.getElementById('analyzeInput').value;
+  const r  = document.getElementById('analyzeResult');
+  if (!pw) { r.innerHTML = ''; return; }
+  const a = analysePassword(pw);
+  r.innerHTML = `
+    <div class="strength-bar-wrap"><div class="strength-bar" style="width:${a.percent}%;background:${a.color}"></div></div>
+    <div style="display:flex;justify-content:space-between;margin:6px 0;">
+      <span style="color:${a.color};font-weight:700">${a.label}</span>
+      <span style="color:var(--text-muted);font-size:0.75rem">${a.entropy.toFixed(1)} bits</span>
+    </div>
+    <div class="stats-grid" style="margin-bottom:10px;">
+      <div class="stat-card"><span class="stat-val" style="color:${a.color}">${a.score}/6</span><span class="stat-lbl">Score</span></div>
+      <div class="stat-card"><span class="stat-val">${pw.length}</span><span class="stat-lbl">Length</span></div>
+      <div class="stat-card"><span class="stat-val">${a.charsetSize}</span><span class="stat-lbl">Charset</span></div>
+      <div class="stat-card"><span class="stat-val" style="font-size:0.65rem;color:var(--amber)">${a.crackTime}</span><span class="stat-lbl">Crack Est.</span></div>
+    </div>
+    <div class="rec-box ${a.score>=5?'great':a.score>=4?'good':''}">
+      ${a.score<=2?'⚠️ Very weak. Avoid using this password.':a.score<=3?'⚡ Moderate. Consider a longer, more complex password.':'✅ '+a.crackTime+' estimated to crack.'}
+    </div>
+  `;
+}
+
+/* --- PASSPHRASE GENERATOR --- */
+function toolPassphrase() {
+  openModal('🗝 Passphrase Generator', `
+    <div class="form-group">
+      <label>Number of words</label>
+      <div class="range-wrap">
+        <input type="range" id="ppWords" min="3" max="8" value="4"
+               oninput="document.getElementById('ppWordsVal').textContent=this.value;genPP()">
+        <span class="range-val" id="ppWordsVal">4</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Separator</label>
+      <select id="ppSep" onchange="genPP()">
+        <option value="-">Hyphen  ( - )</option>
+        <option value=".">Dot  ( . )</option>
+        <option value="_">Underscore  ( _ )</option>
+        <option value=" ">Space</option>
+        <option value="">None</option>
+      </select>
+    </div>
+    <div id="ppResult" style="font-family:var(--font-mono);font-size:1.1rem;color:var(--green);
+         padding:14px;background:var(--bg-deep);border-radius:var(--radius);
+         text-shadow:0 0 8px #39ff1444;word-break:break-all;min-height:48px;margin-bottom:12px;"></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="genPP()">🔄 Regenerate</button>
+      <button class="btn btn-secondary" onclick="copyText(document.getElementById('ppResult').textContent)">📋 Copy</button>
+    </div>
+  `);
+  genPP();
+}
+
+function genPP() {
+  const n   = parseInt(document.getElementById('ppWords').value);
+  const sep = document.getElementById('ppSep').value;
+  const words = [];
+  for (let i = 0; i < n; i++) words.push(cryptoPick(WORDS_NOUN));
+  const num = cryptoRandInt(99) + 1;
+  words.push(String(num).padStart(2,'0'));
+  document.getElementById('ppResult').textContent = words.join(sep);
+}
+
+/* --- USERNAME GENERATOR --- */
+function toolUsername() {
+  openModal('👤 Username Generator', `
+    <div class="form-group">
+      <label>Style</label>
+      <select id="unStyle">
+        <option value="wordsnum">Word + Word + Number</option>
+        <option value="prefix">Prefix + Name</option>
+        <option value="adjnoun">Adj + Noun</option>
+        <option value="initials">Initials + Number</option>
+      </select>
+    </div>
+    <div id="unResults" style="display:flex;flex-direction:column;gap:8px;margin:12px 0;"></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="genUsernames()">🔄 Generate 5</button>
+    </div>
+  `);
+  genUsernames();
+}
+
+function genUsernames() {
+  const style   = document.getElementById('unStyle').value;
+  const results = document.getElementById('unResults');
+  const names   = [];
+  for (let i = 0; i < 5; i++) {
+    let name = '';
+    const num = cryptoRandInt(999) + 1;
+    if (style === 'wordsnum')  name = cryptoPick(USERNAME_PREFIX) + cryptoPick(USERNAME_SUFFIX) + num;
+    else if (style === 'prefix') name = cryptoPick(USERNAME_PREFIX) + '_' + cryptoPick(WORDS_NOUN);
+    else if (style === 'adjnoun') name = cryptoPick(WORDS_ADJ) + cryptoPick(WORDS_NOUN);
+    else { const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'; name = cryptoPick(letters.split('')) + cryptoPick(letters.split('')) + cryptoPick(letters.split('')) + num; }
+    names.push(name);
+  }
+  results.innerHTML = names.map(n => `
+    <div class="history-item">
+      <span style="font-family:var(--font-mono);color:var(--cyan);flex:1">${escHtml(n)}</span>
+      <button class="btn-icon btn" onclick="copyText('${escJs(n)}')">📋</button>
+    </div>
+  `).join('');
+}
+
+/* --- PIN GENERATOR --- */
+function toolPIN() {
+  openModal('🔢 PIN Generator', `
+    <div class="form-group">
+      <label>PIN Length</label>
+      <div class="pill-group" id="pinLenGroup">
+        <div class="pill" data-val="4" onclick="selectPillIn(this,'pinLenGroup');genPIN()">4</div>
+        <div class="pill selected" data-val="6" onclick="selectPillIn(this,'pinLenGroup');genPIN()">6</div>
+        <div class="pill" data-val="8" onclick="selectPillIn(this,'pinLenGroup');genPIN()">8</div>
+        <div class="pill" data-val="10" onclick="selectPillIn(this,'pinLenGroup');genPIN()">10</div>
+      </div>
+    </div>
+    <div id="pinDisplay" class="pin-display">——————</div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="genPIN()">🔄 Generate</button>
+      <button class="btn btn-secondary" onclick="copyText(document.getElementById('pinDisplay').textContent.trim())">📋 Copy</button>
+    </div>
+  `);
+  genPIN();
+}
+
+function genPIN() {
+  const lenEl = document.querySelector('#pinLenGroup .pill.selected');
+  const len   = lenEl ? parseInt(lenEl.dataset.val) : 6;
+  let pin = '';
+  for (let i = 0; i < len; i++) pin += cryptoRandInt(10);
+  document.getElementById('pinDisplay').textContent = pin;
+}
+
+function selectPillIn(el, groupId) {
+  document.querySelectorAll('#' + groupId + ' .pill').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+/* --- SECURE RNG --- */
+function toolRNG() {
+  openModal('🎲 Secure Random Number Generator', `
+    <div class="form-group">
+      <label>Min Value</label>
+      <input type="number" id="rngMin" value="1">
+    </div>
+    <div class="form-group">
+      <label>Max Value</label>
+      <input type="number" id="rngMax" value="100">
+    </div>
+    <div class="form-group">
+      <label>Count</label>
+      <select id="rngCount">
+        <option value="1">1 number</option>
+        <option value="5">5 numbers</option>
+        <option value="10">10 numbers</option>
+      </select>
+    </div>
+    <div id="rngDisplay" class="rng-display">?</div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="genRNG()">🎲 Roll</button>
+      <button class="btn btn-secondary" onclick="copyText(document.getElementById('rngDisplay').textContent)">📋 Copy</button>
+    </div>
+    <hr class="divider">
+    <div class="form-group">
+      <label>Random UUID v4</label>
+      <input type="text" id="uuidOut" readonly style="font-family:var(--font-mono);font-size:0.78rem;">
+    </div>
+    <button class="btn btn-secondary" onclick="genUUID()" style="width:100%;">Generate UUID</button>
+  `);
+}
+
+function genRNG() {
+  const min   = parseInt(document.getElementById('rngMin').value) || 1;
+  const max   = parseInt(document.getElementById('rngMax').value) || 100;
+  const count = parseInt(document.getElementById('rngCount').value);
+  if (min >= max) { document.getElementById('rngDisplay').textContent = 'Min must be < Max'; return; }
+  const nums = [];
+  for (let i = 0; i < count; i++) {
+    nums.push(min + cryptoRandInt(max - min + 1));
+  }
+  document.getElementById('rngDisplay').textContent = nums.join('  ');
+}
+
+function genUUID() {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map(b => b.toString(16).padStart(2,'0')).join('');
+  const uuid = `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+  document.getElementById('uuidOut').value = uuid;
+}
+
+/* --- COMPARE --- */
+function toolCompare() {
+  openModal('⚖️ Password Comparison', `
+    <div class="form-group">
+      <label>Password A</label>
+      <input type="text" id="cmpA" placeholder="First password…" oninput="runCompare()" style="font-family:var(--font-mono);">
+    </div>
+    <div class="form-group">
+      <label>Password B</label>
+      <input type="text" id="cmpB" placeholder="Second password…" oninput="runCompare()" style="font-family:var(--font-mono);">
+    </div>
+    <div id="cmpResult"></div>
+  `);
+}
+
+function runCompare() {
+  const a = document.getElementById('cmpA').value;
+  const b = document.getElementById('cmpB').value;
+  const r = document.getElementById('cmpResult');
+  if (!a || !b) { r.innerHTML = ''; return; }
+  const aA = analysePassword(a);
+  const bA = analysePassword(b);
+
+  r.innerHTML = `
+    <table class="compare-table">
+      <thead><tr><th>Property</th><th>Password A</th><th>Password B</th></tr></thead>
+      <tbody>
+        <tr><td>Length</td><td>${a.length}</td><td>${b.length}</td></tr>
+        <tr><td>Strength</td>
+            <td style="color:${aA.color}">${aA.label}</td>
+            <td style="color:${bA.color}">${bA.label}</td></tr>
+        <tr><td>Entropy</td><td>${aA.entropy.toFixed(1)}b</td><td>${bA.entropy.toFixed(1)}b</td></tr>
+        <tr><td>Charset</td><td>${aA.charsetSize}</td><td>${bA.charsetSize}</td></tr>
+        <tr><td>Crack Time</td><td>${aA.crackTime}</td><td>${bA.crackTime}</td></tr>
+        <tr><td>Winner</td>
+            <td colspan="2" style="text-align:center;color:var(--cyan)">
+              ${aA.entropy >= bA.entropy ? '✅ A is stronger' : '✅ B is stronger'}
+            </td>
+        </tr>
+      </tbody>
+    </table>
+  `;
+}
+
+/* --- CHECKLIST --- */
+function toolChecklist() {
+  openModal('✅ Password Checklist', `
+    <div class="form-group">
+      <label>Enter a password to audit</label>
+      <input type="text" id="clInput" placeholder="Type a password…" oninput="runChecklist()" style="font-family:var(--font-mono);">
+    </div>
+    <div id="clResult" class="checklist"></div>
+  `);
+}
+
+function runChecklist() {
+  const pw = document.getElementById('clInput').value;
+  const r  = document.getElementById('clResult');
+  if (!pw) { r.innerHTML = ''; return; }
+
+  const checks = [
+    { label: 'At least 12 characters',         pass: pw.length >= 12 },
+    { label: 'At least 16 characters',         pass: pw.length >= 16 },
+    { label: 'Contains uppercase letter',       pass: /[A-Z]/.test(pw) },
+    { label: 'Contains lowercase letter',       pass: /[a-z]/.test(pw) },
+    { label: 'Contains number',                 pass: /[0-9]/.test(pw) },
+    { label: 'Contains symbol',                 pass: /[^a-zA-Z0-9]/.test(pw) },
+    { label: 'No repeated characters (xxx)',    pass: !(/(.)\1{2,}/.test(pw)) },
+    { label: 'Not a common pattern',            pass: !/password|123456|qwerty|letmein|admin|welcome/i.test(pw) },
+    { label: 'Not only letters',                pass: !/^[a-zA-Z]+$/.test(pw) },
+    { label: 'Not only numbers',                pass: !/^[0-9]+$/.test(pw) },
+    { label: 'Entropy > 60 bits',              pass: analysePassword(pw).entropy > 60 },
+    { label: 'Entropy > 80 bits (recommended)', pass: analysePassword(pw).entropy > 80 },
+  ];
+
+  const score = checks.filter(c => c.pass).length;
+
+  r.innerHTML = `
+    <div style="text-align:center;margin-bottom:12px;">
+      <span style="font-size:1.6rem;font-family:var(--font-mono);color:${score>=10?'var(--cyan)':score>=7?'var(--green)':score>=4?'var(--amber)':'var(--red)'}">${score}/${checks.length}</span>
+      <span style="color:var(--text-muted);font-size:0.78rem;display:block;">checks passed</span>
+    </div>
+    ${checks.map(c => `
+      <div class="check-item">
+        <span class="check-icon">${c.pass ? '✅' : '❌'}</span>
+        <span style="color:${c.pass?'var(--text-primary)':'var(--text-muted)'}">${c.label}</span>
+      </div>
+    `).join('')}
+  `;
+}
+
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escJs(s) {
+  return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+}
+
+// Auto-gen when sliders change if toggle on
+document.getElementById('lengthSlider').addEventListener('input', () => {
+  if (state.settings.autoGen) generatePassword();
+});
+</script>
+</body>
+</html>
